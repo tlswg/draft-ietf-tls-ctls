@@ -94,9 +94,10 @@ a vector with a top range of a varint is denoted as:
 
 ## Record Layer
 
-The CTLS Record Layer assumes that records are externally framed (i.e.,
-that the length is already known). Thus, only the type byte need
-be carried. Thus, TLSPlaintext becomes:
+The CTLS Record Layer assumes that records are externally framed
+(i.e., that the length is already known). Depending on how this was
+carried, you might need another byte or two for that framing. Thus,
+only the type byte need be carried. Thus, TLSPlaintext becomes:
 
 ~~~~
       struct {
@@ -121,12 +122,15 @@ TLSCiphertext becomes:
       } TLSCiphertext;
 ~~~~
 
+Note: The user is responsible for ensuring that the sequence
+numbers/nonces are handled in the usual fashion.
+
 Overhead: 1 byte per record.
 
 
 ## Handshake Layer
 
-The CTLS handshake layer is the same as the TLS !.3 handshake
+The CTLS handshake layer is the same as the TLS 1.3 handshake
 layer except that the length is a varint.
 
 ~~~~
@@ -287,7 +291,6 @@ reeencodes the extensions.
       } CertificateRequest;
 ~~~~
 
-Overhead: 0.
 
 
 ## Certificate
@@ -302,19 +305,16 @@ we redefine Certificate as:
     } KeyIdCertificate;
 ~~~~
 
-Overhead: 0
 
 ### CertificateVerify
 
 Unchanged.
 
-Overhead: 0
 
 ### Finished
 
 Unchanged.
 
-Overhead: 0
 
 
 # Handshake Size Calculations
@@ -323,10 +323,11 @@ Overhead: 0
 
 We compute the total flight size with X25519 and P-256 signatures,
 thus the keys are 32-bytes long and the signatures 64 bytes,
-with a cipher with an 8 byte auth tag.
+with a cipher with an 8 byte auth tag. Overhead estimates marked
+with *** have been verified with Mint.
 
 
-### Flight 1 (ClientHello)
+### Flight 1 (ClientHello) ***
 
 * Random: 16
 * KeyShare: 32
@@ -338,7 +339,7 @@ with a cipher with an 8 byte auth tag.
 
 ### Flight 2 (ServerHello..Finished)
 
-ServerHello
+ServerHello ***
 
 * Random: 16
 * KeyShare: 32
