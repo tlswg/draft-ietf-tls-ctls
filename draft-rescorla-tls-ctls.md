@@ -50,6 +50,11 @@ For the common (EC)DHE handshake with (EC)DHE and pre-established
 public keys, CTLS achieves an overhead of XXX bytes over the minimum
 required by the cryptovariables.
 
+Although isomorphic, CTLS implementations cannot interoperate with TLS 1.3
+implementations because the packet formats are non-interoperable. It is
+probably possible to make a TLS 1.3 server switch-hit between CTLS and TLS 1.3
+but this specification does not define how.
+
 
 # Conventions and Definitions
 
@@ -325,7 +330,7 @@ We can compute the handshake size in two ways:
 For mutual authentication, the overhead of the handshake is
 as follows:
 
-* Record Layer: 4 bytes (1 cleartext and one encrypted record in each direction).
+* Record Layer: 4 bytes (1 cleartext and one encrypted record in each direction)
 * Handshake Layer: 20 bytes (10 messages; could be 18 bytes if EE is
   omitted.)
 * ClientHello: 8
@@ -349,7 +354,7 @@ with a cipher with an 8 byte auth tag.
 * Message Overhead: 8
 * Handshake Overhead: 2
 * Record Overhead: 1
-* Total: 51
+* Total: 59
 
 
 ### Flight 2 (ServerHello..Finished)
@@ -361,7 +366,7 @@ ServerHello
 * Message Overhead: 6
 * Handshake Overhead: 2
 * Record Overhead: 1
-* Total: 49
+* Total: 57
 
 EncryptedExtensions
 
