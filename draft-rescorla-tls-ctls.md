@@ -308,14 +308,19 @@ we redefine Certificate as:
 
 ### CertificateVerify
 
-Unchanged.
+Remove the signature algorithm and assume it's tied to the
+key. Note that this does not work for RSA keys, but if
+we just decide to be EC only, it works fine.
 
+~~~~
+      struct {
+          opaque signature[rest of message];
+      } CertificateVerify;
+~~~~
 
 ### Finished
 
 Unchanged.
-
-
 
 # Handshake Size Calculations
 
@@ -365,7 +370,7 @@ Certificate ***
 CertificateVerify
 
 * Signature: 64
-* Overhead: 2
+* Overhead: 4
 * Total: 66
 
 Finished
