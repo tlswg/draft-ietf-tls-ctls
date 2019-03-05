@@ -378,8 +378,8 @@ Finished
 Handshake Overhead: 12 bytes (6 messages)
 Record Overhead: 2 bytes (2 records) + 8 bytes (auth tag).
 
-[[OPEN ISSUE: We'll actually need a length field for the ClientHello,
-so add 1 here]]
+[[OPEN ISSUE: We'll actually need a length field for the ServerHello,
+to separate it from the ciphertext.]]
 
 
 Total Size: 188 bytes.
