@@ -348,15 +348,15 @@ ServerHello ***
 * Record Overhead: 1
 * Total: 57
 
-EncryptedExtensions
+EncryptedExtensions ***
 
 * Total: 2
 
-CertificateRequest
+CertificateRequest ***
 
 * Total: 2
 
-Certificate
+Certificate ***
 
 * KeyId: 1
 * Overhead: 2
