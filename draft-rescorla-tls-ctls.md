@@ -319,28 +319,7 @@ Overhead: 0
 
 # Handshake Size Calculations
 
-We can compute the handshake size in two ways:
-
-1. The overhead over the cryptovariables
-2. The minimum size of the handshake for aggressive parameter
-   selection.
-
-## Overhead
-
-For mutual authentication, the overhead of the handshake is
-as follows:
-
-* Record Layer: 4 bytes (1 cleartext and one encrypted record in each direction)
-* Handshake Layer: 20 bytes (10 messages; could be 18 bytes if EE is
-  omitted.)
-* ClientHello: 8
-* ServerHello: 4
-* Certificate: 8 (one in each direction)
-
-Thus, the total overhead is 44 bytes.
-
-
-## Total Flight Size
+## ECDHE w/ Signatures
 
 We compute the total flight size with X25519 and P-256 signatures,
 thus the keys are 32-bytes long and the signatures 64 bytes,
@@ -432,6 +411,9 @@ Record Overhead: 1 byte + 8 bytes (auth tag)
 Total: 127.
 
 
+## ECDHE w/ PSK
+
+[TODO]
 
 
 
