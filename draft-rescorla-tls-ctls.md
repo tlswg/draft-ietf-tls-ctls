@@ -76,10 +76,10 @@ width of the integer is encoded in the first two bits of the field
 as follows, with xs indicating bits that form part of the integer.
 
 | Bit pattern | Length (bytes)|
-|:-----------|:-------|
-| 1xxxxxxx   |1 |
-| 10xxxxxx   |2 |
-| 11xxxxxx   |3 |
+|:-|:-|
+| 0xxxxxxx | 1 |
+| 10xxxxxx | 2 |
+| 11xxxxxx | 3 |
 
 Thus, one byte can be used to carry values up to 127.
 
