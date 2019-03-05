@@ -425,9 +425,11 @@ Total: 127.
 
 # Security Considerations
 
-CTLS is isomorphic to TLS 1.3, and therefore should have the
-same security considerations. [[OPEN ISSUE: One could imagine
-internally translating CTLS to TLS 1.3 so that the transcript,
+WARNING: This document is effectively brand new and has seen no
+analysis. The idea here is that CTLS is isomorphic to TLS 1.3, and
+therefore should have the same security considerations, but
+this needs to be verified. [[OPEN ISSUE:
+One could imagine internally translating CTLS to TLS 1.3 so that the transcript,
 etc. were the same, but I doubt it's worth it, and then you
 might need to worry about cross-protocol attacks.]]
 
