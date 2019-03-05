@@ -339,6 +339,9 @@ we redefine Certificate as:
 
 This allows the use of a short key id.
 
+IMPORTANT: You really want to include the certificate in the handshake
+transcript somehow, but this isn't specified for how.
+
 
 
 ### CertificateVerify
