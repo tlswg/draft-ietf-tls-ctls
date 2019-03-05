@@ -199,7 +199,7 @@ protocol version.]]
 In order to conserve space, the following extensions have default
 values which apply if they are not present:
 
-* SignatureAlgorithms: ecdsa_secp256r1_sha256
+* SignatureAlgorithms: ed25519
 * SupportedGroups: the list of groups present in the KeyShare
   extension.
 * Pre-Shared Key Exchange Modes: psk_dhe_ke
