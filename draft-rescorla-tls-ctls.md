@@ -37,6 +37,9 @@ encodings.
 
 # Introduction
 
+DISCLAIMER: This is a pre-draft for discussion only and has not seen
+any analysis, so could contain major errors.
+
 This document specifies a "compact" version of TLS 1.3 {{!RFC8446}}. It is isomorphic
 to TLS 1.3 but designed to take up minimal bandwidth. The space reduction
 is achieved by two basic techniques:
