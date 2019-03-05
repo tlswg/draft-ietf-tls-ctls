@@ -75,11 +75,14 @@ integer range while still providing for a minimal encoding. The
 width of the integer is encoded in the first two bits of the field
 as follows, with xs indicating bits that form part of the integer.
 
-| Bit pattern | Length (bytes)|
-|:-|:-|
-| 0xxxxxxx | 1 |
-| 10xxxxxx | 2 |
-| 11xxxxxx | 3 |
+
+| Bit pattern                | Length (bytes) |
+|:----------------------------|:----------------|
+| 0xxxxxxx                   | 1              |
+|                            |                |
+| 10xxxxxx xxxxxxxx          | 2              |
+|                            |                |
+| 11xxxxxx xxxxxxxx xxxxxxxx | 3              |
 
 Thus, one byte can be used to carry values up to 127.
 
@@ -90,7 +93,8 @@ a vector with a top range of a varint is denoted as:
      opaque foo<1..V>;
 ~~~~~
 
-
+[[OPEN ISSUE: Should we just re-encode this directly in CBOR?.
+That might be easier for people, but I ran out of time.]]
 
 ## Record Layer
 
@@ -200,6 +204,11 @@ The CTLS ClientHello is as follows.
 [[TODO: Define single-byte mappings of the cipher suites and
 protocol version.]]
 
+The versions list from "supported_versions" has moved into
+the versions list with versions being one byte, but with
+the modern semantics of the client offering N versions
+and the server picking one.
+
 In order to conserve space, the following extensions have default
 values which apply if they are not present:
 
@@ -208,6 +217,7 @@ values which apply if they are not present:
   extension.
 * Pre-Shared Key Exchange Modes: psk_dhe_ke
 * Certificate Type: A new TBD value indicating a key index.
+
 
 As a practical matter, the only extension needed is the KeyShare
 extension, as defined below.
@@ -273,6 +283,12 @@ to send one key share (so group wasn't needed)..]]
 
 [[TODO: Need to define a single-byte list of NamedGroups]].
 
+
+### PreSharedKeys
+
+[[TODO]]
+
+
 ## EncryptedExtensions
 
 This is unchanged.
@@ -295,6 +311,9 @@ reeencodes the extensions.
 
 ## Certificate
 
+WARNING: This is a new feature which has not seen any analysis
+and so may have real problems.
+
 Certificate is essentially unchanged for the X.509-based modes
 but as an exception when you negotiate the KeyID-based mode,
 we redefine Certificate as:
@@ -303,7 +322,20 @@ we redefine Certificate as:
     struct {
         varint key_id;
     } KeyIdCertificate;
+
+    struct {
+          select (certiticate_type):
+              case RawPublicKey, x509:
+                  CertificateEntry certificate_list<0..2^24-1>;
+
+              case key_id:
+                  KeyIdCertificate;
+          }
+      } Certificate;
 ~~~~
+
+This allows the use of a short key id.
+
 
 
 ### CertificateVerify
@@ -321,6 +353,11 @@ we just decide to be EC only, it works fine.
 ### Finished
 
 Unchanged.
+
+### HelloRetryRequest
+
+[[TODO]]
+
 
 # Handshake Size Calculations
 
@@ -427,11 +464,16 @@ Total: 127.
 
 WARNING: This document is effectively brand new and has seen no
 analysis. The idea here is that CTLS is isomorphic to TLS 1.3, and
-therefore should have the same security considerations, but
-this needs to be verified. [[OPEN ISSUE:
-One could imagine internally translating CTLS to TLS 1.3 so that the transcript,
-etc. were the same, but I doubt it's worth it, and then you
-might need to worry about cross-protocol attacks.]]
+therefore should.
+
+One piece that is a new TLS 1.3 feature is the addition of the key_id,
+which definitely requires some analysis, especially as it looks like
+a potential source of identity misbinding. This is entirely separable
+from the rest of the specification.
+
+[[OPEN ISSUE: One could imagine internally translating CTLS to TLS 1.3
+so that the transcript, etc. were the same, but I doubt it's worth it,
+and then you might need to worry about cross-protocol attacks.]]
 
 
 # IANA Considerations
