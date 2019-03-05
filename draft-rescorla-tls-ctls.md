@@ -1,7 +1,7 @@
 ---
 title: Compact TLS 1.3
 abbrev: CTLS 1.3
-docname: draft-rescorla-tls-ctls
+docname: draft-rescorla-tls-ctls-latest
 category: info
 
 ipr: trust200902
