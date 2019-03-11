@@ -37,8 +37,9 @@ encodings.
 
 # Introduction
 
-DISCLAIMER: This is a pre-draft for discussion only and has not seen
-any analysis, so could contain major errors.
+DDISCLAIMER: This is a work-in-progress draft of MLS and has not yet
+seen significant security analysis, so could contain major errors. It
+should not be used as a basis for building production systems.
 
 This document specifies a "compact" version of TLS 1.3 {{!RFC8446}}. It is isomorphic
 to TLS 1.3 but designed to take up minimal bandwidth. The space reduction
