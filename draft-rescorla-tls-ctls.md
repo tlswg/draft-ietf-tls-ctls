@@ -369,7 +369,8 @@ by adding a KeyID-based mode, which redefines Certificate as:
       } Certificate;
 ~~~~
 
-This allows the use of a short key id.
+This allows the use of a short key id. Note that this is orthogonal
+to the rest of the changes.
 
 IMPORTANT: You really want to include the certificate in the handshake
 transcript somehow, but this isn't specified for how.
