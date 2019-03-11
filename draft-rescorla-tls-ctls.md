@@ -6,7 +6,7 @@ category: info
 
 ipr: trust200902
 area: General
-workgroup: TODO Working Group
+workgroup: TLS Working Group
 keyword: Internet-Draft
 
 stand_alone: yes
@@ -30,7 +30,8 @@ informative:
 
 This document specifies a "compact" version of TLS 1.3. It is isomorphic
 to TLS 1.3 but saves space by aggressive use of defaults and tighter
-encodings.
+encodings. CTLS is not interoperable with TLS 1.3, but it should
+be possible for the server to distinguish TLS 1.3 and CTLS handshakes.
 
 
 --- middle
@@ -51,7 +52,7 @@ is achieved by two basic techniques:
 - More compact encodings, omitting unnecessary values.
 
 For the common (EC)DHE handshake with (EC)DHE and pre-established
-public keys, CTLS achieves an overhead of XXX bytes over the minimum
+public keys, CTLS achieves an overhead of [TODO] bytes over the minimum
 required by the cryptovariables.
 
 Although isomorphic, CTLS implementations cannot interoperate with TLS 1.3
@@ -103,9 +104,10 @@ That might be easier for people, but I ran out of time.]]
 ## Record Layer
 
 The CTLS Record Layer assumes that records are externally framed
-(i.e., that the length is already known). Depending on how this was
-carried, you might need another byte or two for that framing. Thus,
-only the type byte need be carried. Thus, TLSPlaintext becomes:
+(i.e., that the length is already known because it is carried in a UDP
+datagram or the like). Depending on how this was carried, you might
+need another byte or two for that framing. Thus, only the type byte
+need be carried. Thus, TLSPlaintext becomes:
 
 ~~~~
       struct {
@@ -193,9 +195,9 @@ are slightly modified for space reduction.
 The CTLS ClientHello is as follows.
 
 ~~~~
-      uint8 ProtocolVersion;
-      opaque Random[16];
-      uint8 CipherSuite;
+      uint8 ProtocolVersion;  // 1 byte
+      opaque Random[16];      // shortened
+      uint8 CipherSuite;      // 1 byte
 
       struct {
           ProtocolVersion versions<0..255>;
@@ -209,9 +211,9 @@ The CTLS ClientHello is as follows.
 protocol version.]]
 
 The versions list from "supported_versions" has moved into
-the versions list with versions being one byte, but with
-the modern semantics of the client offering N versions
-and the server picking one.
+ClientHello.versions with versions being one byte, but with the modern
+semantics of the client offering N versions and the server picking
+one.
 
 In order to conserve space, the following extensions have default
 values which apply if they are not present:
@@ -228,8 +230,8 @@ extension, as defined below.
 
 Overhead: 8 bytes (min)
 
-* Versions: 1 + No. Versions
-* CipherSuites: 1 + No. Suites
+* Versions: 1 + NV
+* CipherSuites: 1 + NS
 * Key shares: 2 + 2 * # shares
 
 
@@ -239,7 +241,7 @@ The KeyShare extension is redefined as:
 
 
 ~~~~
-      uint8 NamedGroup; // TODO: Need an 8-bit group mapping
+      uint8 NamedGroup;
       struct {
           NamedGroup group;
           opaque key_exchange<1..V>;
@@ -249,6 +251,8 @@ The KeyShare extension is redefined as:
           KeyShareEntry client_shares[length of extension];
       } KeyShareClientHello;
 ~~~~
+
+[[TODO: Need a mapping for 8-bit group ids]]
 
 ## ServerHello
 
@@ -295,7 +299,7 @@ to send one key share (so group wasn't needed)..]]
 
 ## EncryptedExtensions
 
-This is unchanged.
+Unchanged.
 
 [[OPEN ISSUE: We could save 2 bytes in handshake header by
 omitting this value when it's unneeded.]]
@@ -303,7 +307,7 @@ omitting this value when it's unneeded.]]
 ## CertificateRequest
 
 This message removes the certificate_request_context and
-reeencodes the extensions.
+re-encodes the extensions.
 
 ~~~~
       struct {
@@ -351,8 +355,11 @@ overhead for the two length bytes.
 WARNING: This is a new feature which has not seen any analysis
 and so may have real problems.
 
+[[OPEN ISSUE: Do we want this at all?]]
+
 It may also be possible to slim down the Certificate message further,
-by adding a KeyID-based mode, which redefines Certificate as:
+by adding a KeyID-based mode, in which they keys were just a table
+index. This would redefines Certificate as:
 
 ~~~~
     struct {
@@ -372,6 +379,7 @@ by adding a KeyID-based mode, which redefines Certificate as:
 
 This allows the use of a short key id. Note that this is orthogonal
 to the rest of the changes.
+
 
 IMPORTANT: You really want to include the certificate in the handshake
 transcript somehow, but this isn't specified for how.
@@ -403,7 +411,9 @@ Unchanged.
 
 We compute the total flight size with X25519 and P-256 signatures,
 thus the keys are 32-bytes long and the signatures 64 bytes,
-with a cipher with an 8 byte auth tag. Overhead estimates marked
+with a cipher with an 8 byte auth tag, as in AEAD_AES_128_CCM_8.
+[Note: GCM should not be used with a shortened tag.]
+Overhead estimates marked
 with *** have been verified with Mint.
 
 
@@ -501,7 +511,9 @@ Total: 113 + X bytes
 
 WARNING: This document is effectively brand new and has seen no
 analysis. The idea here is that CTLS is isomorphic to TLS 1.3, and
-therefore should.
+therefore should provide equivalent security guarantees, modulo use of
+new features such as KeyID certificate messages.
+
 
 One piece that is a new TLS 1.3 feature is the addition of the key_id,
 which definitely requires some analysis, especially as it looks like
