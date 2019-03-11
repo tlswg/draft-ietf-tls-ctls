@@ -38,7 +38,7 @@ eventually be possible for the server to distinguish TLS 1.3 and CTLS handshakes
 
 # Introduction
 
-DDISCLAIMER: This is a work-in-progress draft of MLS and has not yet
+DDISCLAIMER: This is a work-in-progress draft of cTLS and has not yet
 seen significant security analysis, so could contain major errors. It
 should not be used as a basis for building production systems.
 
