@@ -314,12 +314,44 @@ reeencodes the extensions.
 
 ## Certificate
 
+We can slim down the Certficate message somewhat.
+
+~~~~
+      enum {
+          X509(0),
+          RawPublicKey(2),
+          (255)
+      } CertificateType;
+
+      struct {
+          select (certificate_type) {
+              case RawPublicKey:
+                /* From RFC 7250 ASN.1_subjectPublicKeyInfo */
+                opaque ASN1_subjectPublicKeyInfo<1..V>;
+
+              case X509:
+                opaque cert_data<1..V>;
+          };
+          Extension extensions<0..V>;
+      } CertificateEntry;
+
+      struct {
+          CertificateEntry certificate_list[rest of extension];
+      } Certificate;
+~~~~
+
+For a single certificate, this message will have a minumum of 2 bytes of
+overhead for the two length bytes.
+
+[[OPEN ISSUE: What should the default type be?]]
+
+### Key IDs
+
 WARNING: This is a new feature which has not seen any analysis
 and so may have real problems.
 
-Certificate is essentially unchanged for the X.509-based modes
-but as an exception when you negotiate the KeyID-based mode,
-we redefine Certificate as:
+It may also be possible to slim down the Certificate message further,
+by adding a KeyID-based mode, which redefines Certificate as:
 
 ~~~~
     struct {
@@ -341,8 +373,6 @@ This allows the use of a short key id.
 
 IMPORTANT: You really want to include the certificate in the handshake
 transcript somehow, but this isn't specified for how.
-
-
 
 ### CertificateVerify
 
@@ -393,71 +423,70 @@ ServerHello ***
 * KeyShare: 32
 * Message Overhead: 6
 * Handshake Overhead: 2
-* Record Overhead: 1
-* Total: 57
+* Total: 56
 
 EncryptedExtensions ***
 
+* Handshake Overhead: 2
 * Total: 2
 
 CertificateRequest ***
 
+* Handshake Overhead: 2
 * Total: 2
 
-Certificate ***
+Certificate
 
-* KeyId: 1
-* Overhead: 2
-* Total: 3
+* Certificate: X
+* Length bytes: 2
+* Handshake Overhead: 2
+* Total: 4 + X
 
 CertificateVerify
 
 * Signature: 64
-* Overhead: 4
+* Handshake Overhead: 2
 * Total: 66
 
 Finished
 
 * MAC: 32
 * Overhead: 2
-* Total: 43
+* Total: 34
 
 
-Handshake Overhead: 12 bytes (6 messages)
 Record Overhead: 2 bytes (2 records) + 8 bytes (auth tag).
 
 [[OPEN ISSUE: We'll actually need a length field for the ServerHello,
 to separate it from the ciphertext.]]
 
-
-Total Size: 188 bytes.
+Total Size: 175 + X bytes.
 
 
 ### Flight 3 (Client Certificate..Finished)
 
 Certificate
 
-* KeyId: 1
-* Overhead: 2
-* Total: 3
+* Certificate: X
+* Length bytes: 2
+* Handshake Overhead: 2
+* Total: 4 + X
 
 CertificateVerify
 
 * Signature: 64
-* Overhead: 2
+* Handshake Overhead: 2
 * Total: 66
 
 Finished
 
 * MAC: 32
-* Overhead: 2
-* Total: 43
+* Handshake Overhead: 2
+* Total: 34
 
-
-Handshake Overhead: 6 bytes (3 messages)
 Record Overhead: 1 byte + 8 bytes (auth tag)
 
-Total: 127.
+Total: 113 + X bytes
 
 
 ## ECDHE w/ PSK
