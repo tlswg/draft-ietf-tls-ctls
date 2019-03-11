@@ -31,7 +31,7 @@ informative:
 This document specifies a "compact" version of TLS 1.3. It is isomorphic
 to TLS 1.3 but saves space by aggressive use of defaults and tighter
 encodings. CTLS is not interoperable with TLS 1.3, but it should
-be possible for the server to distinguish TLS 1.3 and CTLS handshakes.
+eventually be possible for the server to distinguish TLS 1.3 and CTLS handshakes.
 
 
 --- middle
@@ -187,7 +187,7 @@ length coded:
 # Handshake Messages
 
 In general, we retain the basic structure of each individual
-TLS handshake message. However. The following handshake messages
+TLS handshake message. However, the following handshake messages
 are slightly modified for space reduction.
 
 ## ClientHello
@@ -413,8 +413,8 @@ We compute the total flight size with X25519 and P-256 signatures,
 thus the keys are 32-bytes long and the signatures 64 bytes,
 with a cipher with an 8 byte auth tag, as in AEAD_AES_128_CCM_8.
 [Note: GCM should not be used with a shortened tag.]
-Overhead estimates marked
-with *** have been verified with Mint.
+Overhead estimates marked with *** have been verified with Mint.
+Others are hand calculations and so may prove to be approximate.
 
 
 ### Flight 1 (ClientHello) ***
