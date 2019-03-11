@@ -230,8 +230,8 @@ extension, as defined below.
 
 Overhead: 8 bytes (min)
 
-* Versions: 1 + NV
-* CipherSuites: 1 + NS
+* Versions: 1 + # Versions
+* CipherSuites: 1 + # Suites
 * Key shares: 2 + 2 * # shares
 
 
