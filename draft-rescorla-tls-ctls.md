@@ -19,6 +19,12 @@ author:
     organization: Mozilla
     email: ekr@rtfm.com
 
+ -
+    ins: R. Barnes
+    name: Richard Barnes
+    organization: Cisco
+    email: rlb@ipv.sx
+
 normative:
   RFC2119:
 
@@ -31,14 +37,14 @@ informative:
 This document specifies a "compact" version of TLS 1.3. It is isomorphic
 to TLS 1.3 but saves space by aggressive use of defaults and tighter
 encodings. CTLS is not interoperable with TLS 1.3, but it should
-be possible for the server to distinguish TLS 1.3 and CTLS handshakes.
+eventually be possible for the server to distinguish TLS 1.3 and CTLS handshakes.
 
 
 --- middle
 
 # Introduction
 
-DDISCLAIMER: This is a work-in-progress draft of MLS and has not yet
+DISCLAIMER: This is a work-in-progress draft of cTLS and has not yet
 seen significant security analysis, so could contain major errors. It
 should not be used as a basis for building production systems.
 
@@ -55,11 +61,10 @@ For the common (EC)DHE handshake with (EC)DHE and pre-established
 public keys, CTLS achieves an overhead of [TODO] bytes over the minimum
 required by the cryptovariables.
 
-Although isomorphic, CTLS implementations cannot interoperate with TLS 1.3
-implementations because the packet formats are non-interoperable. It is
-probably possible to make a TLS 1.3 server switch-hit between CTLS and TLS 1.3
-but this specification does not define how.
-
+Because cTLS is semantically equivalent to TLS, it can be viewed either
+as a related protocol or as a compression mechanism. Specifically, it
+can be implemented by a layer between the TLS handshake state
+machine and the record layer. See {{compression-layer}} for more details.
 
 # Conventions and Definitions
 
@@ -187,7 +192,7 @@ length coded:
 # Handshake Messages
 
 In general, we retain the basic structure of each individual
-TLS handshake message. However. The following handshake messages
+TLS handshake message. However, the following handshake messages
 are slightly modified for space reduction.
 
 ## ClientHello
@@ -407,14 +412,17 @@ Unchanged.
 
 # Handshake Size Calculations
 
+This section provides the size of cTLS handshakes with various
+parameters [[TODO: Fill this out with more options.]]
+
 ## ECDHE w/ Signatures
 
 We compute the total flight size with X25519 and P-256 signatures,
 thus the keys are 32-bytes long and the signatures 64 bytes,
 with a cipher with an 8 byte auth tag, as in AEAD_AES_128_CCM_8.
 [Note: GCM should not be used with a shortened tag.]
-Overhead estimates marked
-with *** have been verified with Mint.
+Overhead estimates marked with *** have been verified with Mint.
+Others are hand calculations and so may prove to be approximate.
 
 
 ### Flight 1 (ClientHello) ***
@@ -501,11 +509,53 @@ Record Overhead: 1 byte + 8 bytes (auth tag)
 Total: 113 + X bytes
 
 
-## ECDHE w/ PSK
 
-[TODO]
+# cTLS as Compression Layer [[OPEN ISSUE]] {#compression-layer}
 
+The above text treates cTLS as a new protocol; however it is also possible
+to view it as a form of compression for TLS, which sits in between the
+handshake layer and the record layer, like so:
 
+~~~~~
++---------------+---------------+---------------+
+|   Handshake   |  Application  |     Alert     |
++---------------+---------------+---------------+
+|               cTLS Compression Layer          |
++---------------+---------------+---------------+
+|               cTLS Record Layer               |
++---------------+---------------+---------------+
+~~~~~
+
+This structure does involve one technical difference: because the handshake
+message transformation happens below the handshake layer, the cTLS handshake
+transcript would be the same as the TLS 1.3 handshake transcript. This has
+both advantages and disadvantages.
+
+The major advantage is that it makes it possible to reuse all the TLS
+security proofs even with very aggressive compression (with suitable
+proofs about the bijectiveness of the compression). [Thanks to Karthik
+Bhargavan for this point.] This probably also makes it easier to
+implement more aggressive compression. For instance, the above text
+shrinks the handshake headers but does not elide them entirely.
+If the handshake shape (i.e., which messages are sent) is known in
+advance, then these headers can be removed, thus trimming about 20 bytes
+from the handshake. This is easier to reason about as a form of compression.
+With somewhat aggressive parameters, including predetermined cipher suites,
+this technique can bring the handshake (without record overhead) to:
+
+~~~~
+Client's first flight       48
+Server's first flight       164
+Client's second flight      116
+~~~~
+
+The major potential disadvantage of a compression approach is that it
+makes cTLS and TLS handshakes confusable. For instance, an attacker
+who obtained the handshake keys might be able to undetectably
+transform a cTLS <-> TLS connection into a TLS <-> TLS
+connection. This is easily dealt with by modifying the transcript,
+e.g., by injecting a cTLS extension in the transcript (though not into
+cTLS wire format).
 
 # Security Considerations
 
@@ -519,10 +569,6 @@ One piece that is a new TLS 1.3 feature is the addition of the key_id,
 which definitely requires some analysis, especially as it looks like
 a potential source of identity misbinding. This is entirely separable
 from the rest of the specification.
-
-[[OPEN ISSUE: One could imagine internally translating CTLS to TLS 1.3
-so that the transcript, etc. were the same, but I doubt it's worth it,
-and then you might need to worry about cross-protocol attacks.]]
 
 
 # IANA Considerations
