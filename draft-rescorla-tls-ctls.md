@@ -44,7 +44,7 @@ eventually be possible for the server to distinguish TLS 1.3 and CTLS handshakes
 
 # Introduction
 
-DDISCLAIMER: This is a work-in-progress draft of cTLS and has not yet
+DISCLAIMER: This is a work-in-progress draft of cTLS and has not yet
 seen significant security analysis, so could contain major errors. It
 should not be used as a basis for building production systems.
 
@@ -64,7 +64,7 @@ required by the cryptovariables.
 Because cTLS is semantically equivalent to TLS, it can be viewed either
 as a related protocol or as a compression mechanism. Specifically, it
 can be implemented by a layer between the TLS handshake state
-machine and the record layer. In order to enable this, the cTLS trans
+machine and the record layer. See {{compression-layer}} for more details.
 
 # Conventions and Definitions
 
@@ -510,7 +510,7 @@ Total: 113 + X bytes
 
 
 
-# cTLS as Compression Layer [[OPEN ISSUE]]
+# cTLS as Compression Layer [[OPEN ISSUE]] {#compression-layer}
 
 The above text treates cTLS as a new protocol; however it is also possible
 to view it as a form of compression for TLS, which sits in between the
