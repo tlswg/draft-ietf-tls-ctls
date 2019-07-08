@@ -412,6 +412,9 @@ Unchanged.
 
 # Handshake Size Calculations
 
+This section provides the size of cTLS handshakes with various
+parameters [[TODO: Fill this out with more options.]]
+
 ## ECDHE w/ Signatures
 
 We compute the total flight size with X25519 and P-256 signatures,
@@ -505,10 +508,6 @@ Record Overhead: 1 byte + 8 bytes (auth tag)
 
 Total: 113 + X bytes
 
-
-## ECDHE w/ PSK
-
-[TODO]
 
 
 # cTLS as Compression Layer [[OPEN ISSUE]]
