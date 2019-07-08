@@ -540,16 +540,22 @@ shrinks the handshake headers but does not elide them entirely.
 If the handshake shape (i.e., which messages are sent) is known in
 advance, then these headers can be removed, thus trimming about 20 bytes
 from the handshake. This is easier to reason about as a form of compression.
-With very aggressive parameters, this technique can bring the
-handshake down to about XXX [[RLB]] bytes.
+With somewhat aggressive parameters, including predetermined cipher suites,
+this technique can bring the handshake (without record overhead) to:
 
-The major potential disadvantage is that it makes cTLS and TLS
-handshakes confusable. For instance, an attacker who obtained the
-handshake keys might be able to undetectably transform a cTLS <-> TLS
-connection into a TLS <-> TLS connection. This is easily dealt with
-by modifying the transcript, e.g., by injecting a cTLS extension in
-the transcript (though not into cTLS wire format).
+~~~~
+Client's first flight       48
+Server's first flight       164
+Client's second flight      116
+~~~~
 
+The major potential disadvantage of a compression approach is that it
+makes cTLS and TLS handshakes confusable. For instance, an attacker
+who obtained the handshake keys might be able to undetectably
+transform a cTLS <-> TLS connection into a TLS <-> TLS
+connection. This is easily dealt with by modifying the transcript,
+e.g., by injecting a cTLS extension in the transcript (though not into
+cTLS wire format).
 
 # Security Considerations
 
