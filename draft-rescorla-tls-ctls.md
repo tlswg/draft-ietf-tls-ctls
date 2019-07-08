@@ -19,6 +19,12 @@ author:
     organization: Mozilla
     email: ekr@rtfm.com
 
+ -
+    ins: R. Barnes
+    name: Richard Barnes
+    organization: Cisco
+    email: rlb@ipv.sx
+
 normative:
   RFC2119:
 
@@ -55,11 +61,10 @@ For the common (EC)DHE handshake with (EC)DHE and pre-established
 public keys, CTLS achieves an overhead of [TODO] bytes over the minimum
 required by the cryptovariables.
 
-Although isomorphic, CTLS implementations cannot interoperate with TLS 1.3
-implementations because the packet formats are non-interoperable. It is
-probably possible to make a TLS 1.3 server switch-hit between CTLS and TLS 1.3
-but this specification does not define how.
-
+Because cTLS is semantically equivalent to TLS, it can be viewed either
+as a related protocol or as a compression mechanism. Specifically, it
+can be implemented by a layer between the TLS handshake state
+machine and the record layer. In order to enable this, the cTLS trans
 
 # Conventions and Definitions
 
