@@ -511,6 +511,46 @@ Total: 113 + X bytes
 [TODO]
 
 
+# cTLS as Compression Layer [[OPEN ISSUE]]
+
+The above text treates cTLS as a new protocol; however it is also possible
+to view it as a form of compression for TLS, which sits in between the
+handshake layer and the record layer, like so:
+
+~~~~~
++---------------+---------------+---------------+
+|   Handshake   |  Application  |     Alert     |
++---------------+---------------+---------------+
+|               cTLS Compression Layer          |
++---------------+---------------+---------------+
+|               cTLS Record Layer               |
++---------------+---------------+---------------+
+~~~~~
+
+This structure does involve one technical difference: because the handshake
+message transformation happens below the handshake layer, the cTLS handshake
+transcript would be the same as the TLS 1.3 handshake transcript. This has
+both advantages and disadvantages.
+
+The major advantage is that it makes it possible to reuse all the TLS
+security proofs even with very aggressive compression (with suitable
+proofs about the bijectiveness of the compression). [Thanks to Karthik
+Bhargavan for this point.] This probably also makes it easier to
+implement more aggressive compression. For instance, the above text
+shrinks the handshake headers but does not elide them entirely.
+If the handshake shape (i.e., which messages are sent) is known in
+advance, then these headers can be removed, thus trimming about 20 bytes
+from the handshake. This is easier to reason about as a form of compression.
+With very aggressive parameters, this technique can bring the
+handshake down to about XXX [[RLB]] bytes.
+
+The major potential disadvantage is that it makes cTLS and TLS
+handshakes confusable. For instance, an attacker who obtained the
+handshake keys might be able to undetectably transform a cTLS <-> TLS
+connection into a TLS <-> TLS connection. This is easily dealt with
+by modifying the transcript, e.g., by injecting a cTLS extension in
+the transcript (though not into cTLS wire format).
+
 
 # Security Considerations
 
@@ -524,10 +564,6 @@ One piece that is a new TLS 1.3 feature is the addition of the key_id,
 which definitely requires some analysis, especially as it looks like
 a potential source of identity misbinding. This is entirely separable
 from the rest of the specification.
-
-[[OPEN ISSUE: One could imagine internally translating CTLS to TLS 1.3
-so that the transcript, etc. were the same, but I doubt it's worth it,
-and then you might need to worry about cross-protocol attacks.]]
 
 
 # IANA Considerations
