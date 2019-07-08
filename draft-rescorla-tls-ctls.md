@@ -568,7 +568,8 @@ new features such as KeyID certificate messages.
 One piece that is a new TLS 1.3 feature is the addition of the key_id,
 which definitely requires some analysis, especially as it looks like
 a potential source of identity misbinding. This is entirely separable
-from the rest of the specification.
+from the rest of the specification. The compression version would also
+need similar analysis.
 
 
 # IANA Considerations
