@@ -34,10 +34,11 @@ informative:
 
 --- abstract
 
-This document specifies a "compact" version of TLS 1.3. It is isomorphic
-to TLS 1.3 but saves space by aggressive use of defaults and tighter
-encodings. CTLS is not interoperable with TLS 1.3, but it should
-eventually be possible for the server to distinguish TLS 1.3 and CTLS handshakes.
+This document specifies a "compact" version of TLS 1.3. It is
+isomorphic to TLS 1.3 but saves space by trimming obsolete material,
+tighter encoding, and a template-based specialization technique. CTLS
+is not interoperable with TLS 1.3, but it should eventually be
+possible for the server to distinguish TLS 1.3 and CTLS handshakes.
 
 
 --- middle
@@ -50,12 +51,14 @@ should not be used as a basis for building production systems.
 
 This document specifies a "compact" version of TLS 1.3 {{!RFC8446}}. It is isomorphic
 to TLS 1.3 but designed to take up minimal bandwidth. The space reduction
-is achieved by two basic techniques:
+is achieved by three basic techniques:
 
-- Default values for common configurations, thus avoiding the need
-  to take up space on the wire.
-
+- Omitting unnecessary values that are a holdover from previous versions
+  of TLS.
 - More compact encodings, omitting unnecessary values.
+- A template-based specialization mechanism that allows for the creation
+  of application specific versions of TLS that omit unnecessary
+  valuses.
 
 For the common (EC)DHE handshake with (EC)DHE and pre-established
 public keys, CTLS achieves an overhead of [TODO] bytes over the minimum
@@ -64,7 +67,7 @@ required by the cryptovariables.
 Because cTLS is semantically equivalent to TLS, it can be viewed either
 as a related protocol or as a compression mechanism. Specifically, it
 can be implemented by a layer between the TLS handshake state
-machine and the record layer. See {{compression-layer}} for more details.
+machine and the record layer.
 
 # Conventions and Definitions
 
@@ -103,6 +106,9 @@ a vector with a top range of a varint is denoted as:
      opaque foo<1..V>;
 ~~~~~
 
+With a few exceptions, CTLS replaces every integer in TLS
+with a varint.
+
 [[OPEN ISSUE: Should we just re-encode this directly in CBOR?.
 That might be easier for people, but I ran out of time.]]
 
@@ -112,7 +118,7 @@ The CTLS Record Layer assumes that records are externally framed
 (i.e., that the length is already known because it is carried in a UDP
 datagram or the like). Depending on how this was carried, you might
 need another byte or two for that framing. Thus, only the type byte
-need be carried. Thus, TLSPlaintext becomes:
+need be carried and TLSPlaintext becomes:
 
 ~~~~
       struct {
@@ -192,17 +198,18 @@ length coded:
 # Handshake Messages
 
 In general, we retain the basic structure of each individual
-TLS handshake message. However, the following handshake messages
-are slightly modified for space reduction.
+TLS handshake message. However, the following handshake
+messages have been modified for space reduction and cleaned
+up to remove pre TLS 1.3 baggage.
 
 ## ClientHello
 
 The CTLS ClientHello is as follows.
 
 ~~~~
-      uint8 ProtocolVersion;  // 1 byte
-      opaque Random[16];      // shortened
-      uint8 CipherSuite;      // 1 byte
+      uint8 ProtocolVersion;            // 1 byte
+      opaque Random[RandomLength];      // variable length
+      uint8 CipherSuite;                // 1 byte
 
       struct {
           ProtocolVersion versions<0..255>;
@@ -220,44 +227,6 @@ ClientHello.versions with versions being one byte, but with the modern
 semantics of the client offering N versions and the server picking
 one.
 
-In order to conserve space, the following extensions have default
-values which apply if they are not present:
-
-* SignatureAlgorithms: ed25519
-* SupportedGroups: the list of groups present in the KeyShare
-  extension.
-* Pre-Shared Key Exchange Modes: psk_dhe_ke
-* Certificate Type: A new TBD value indicating a key index.
-
-
-As a practical matter, the only extension needed is the KeyShare
-extension, as defined below.
-
-Overhead: 8 bytes (min)
-
-* Versions: 1 + # Versions
-* CipherSuites: 1 + # Suites
-* Key shares: 2 + 2 * # shares
-
-
-### KeyShare
-
-The KeyShare extension is redefined as:
-
-
-~~~~
-      uint8 NamedGroup;
-      struct {
-          NamedGroup group;
-          opaque key_exchange<1..V>;
-      } KeyShareEntry;
-
-      struct {
-          KeyShareEntry client_shares[length of extension];
-      } KeyShareClientHello;
-~~~~
-
-[[TODO: Need a mapping for 8-bit group ids]]
 
 ## ServerHello
 
@@ -355,45 +324,13 @@ overhead for the two length bytes.
 
 [[OPEN ISSUE: What should the default type be?]]
 
-### Key IDs
-
-WARNING: This is a new feature which has not seen any analysis
-and so may have real problems.
-
-[[OPEN ISSUE: Do we want this at all?]]
-
-It may also be possible to slim down the Certificate message further,
-by adding a KeyID-based mode, in which they keys were just a table
-index. This would redefines Certificate as:
-
-~~~~
-    struct {
-        varint key_id;
-    } KeyIdCertificate;
-
-    struct {
-          select (certiticate_type):
-              case RawPublicKey, x509:
-                  CertificateEntry certificate_list<0..2^24-1>;
-
-              case key_id:
-                  KeyIdCertificate;
-          }
-      } Certificate;
-~~~~
-
-This allows the use of a short key id. Note that this is orthogonal
-to the rest of the changes.
-
-
-IMPORTANT: You really want to include the certificate in the handshake
-transcript somehow, but this isn't specified for how.
-
 ### CertificateVerify
 
-Remove the signature algorithm and assume it's tied to the
+We remove the signature algorithm and assume it's tied to the
 key. Note that this does not work for RSA keys, but if
 we just decide to be EC only, it works fine.
+
+[[OPEN ISSUE: This may be too much.]]
 
 ~~~~
       struct {
@@ -410,152 +347,11 @@ Unchanged.
 [[TODO]]
 
 
-# Handshake Size Calculations
-
-This section provides the size of cTLS handshakes with various
-parameters [[TODO: Fill this out with more options.]]
-
-## ECDHE w/ Signatures
-
-We compute the total flight size with X25519 and P-256 signatures,
-thus the keys are 32-bytes long and the signatures 64 bytes,
-with a cipher with an 8 byte auth tag, as in AEAD_AES_128_CCM_8.
-[Note: GCM should not be used with a shortened tag.]
-Overhead estimates marked with *** have been verified with Mint.
-Others are hand calculations and so may prove to be approximate.
-
-
-### Flight 1 (ClientHello) ***
-
-* Random: 16
-* KeyShare: 32
-* Message Overhead: 8
-* Handshake Overhead: 2
-* Record Overhead: 1
-* Total: 59
-
-
-### Flight 2 (ServerHello..Finished)
-
-ServerHello ***
-
-* Random: 16
-* KeyShare: 32
-* Message Overhead: 6
-* Handshake Overhead: 2
-* Total: 56
-
-EncryptedExtensions ***
-
-* Handshake Overhead: 2
-* Total: 2
-
-CertificateRequest ***
-
-* Handshake Overhead: 2
-* Total: 2
-
-Certificate
-
-* Certificate: X
-* Length bytes: 2
-* Handshake Overhead: 2
-* Total: 4 + X
-
-CertificateVerify
-
-* Signature: 64
-* Handshake Overhead: 2
-* Total: 66
-
-Finished
-
-* MAC: 32
-* Overhead: 2
-* Total: 34
-
-
-Record Overhead: 2 bytes (2 records) + 8 bytes (auth tag).
-
-[[OPEN ISSUE: We'll actually need a length field for the ServerHello,
-to separate it from the ciphertext.]]
-
-Total Size: 175 + X bytes.
-
-
-### Flight 3 (Client Certificate..Finished)
-
-Certificate
-
-* Certificate: X
-* Length bytes: 2
-* Handshake Overhead: 2
-* Total: 4 + X
-
-CertificateVerify
-
-* Signature: 64
-* Handshake Overhead: 2
-* Total: 66
-
-Finished
-
-* MAC: 32
-* Handshake Overhead: 2
-* Total: 34
-
-Record Overhead: 1 byte + 8 bytes (auth tag)
-
-Total: 113 + X bytes
+# Template-Based Specialization
 
 
 
-# cTLS as Compression Layer [[OPEN ISSUE]] {#compression-layer}
 
-The above text treates cTLS as a new protocol; however it is also possible
-to view it as a form of compression for TLS, which sits in between the
-handshake layer and the record layer, like so:
-
-~~~~~
-+---------------+---------------+---------------+
-|   Handshake   |  Application  |     Alert     |
-+---------------+---------------+---------------+
-|               cTLS Compression Layer          |
-+---------------+---------------+---------------+
-|               cTLS Record Layer               |
-+---------------+---------------+---------------+
-~~~~~
-
-This structure does involve one technical difference: because the handshake
-message transformation happens below the handshake layer, the cTLS handshake
-transcript would be the same as the TLS 1.3 handshake transcript. This has
-both advantages and disadvantages.
-
-The major advantage is that it makes it possible to reuse all the TLS
-security proofs even with very aggressive compression (with suitable
-proofs about the bijectiveness of the compression). [Thanks to Karthik
-Bhargavan for this point.] This probably also makes it easier to
-implement more aggressive compression. For instance, the above text
-shrinks the handshake headers but does not elide them entirely.
-If the handshake shape (i.e., which messages are sent) is known in
-advance, then these headers can be removed, thus trimming about 20 bytes
-from the handshake. This is easier to reason about as a form of compression.
-With somewhat aggressive parameters, including predetermined cipher suites,
-this technique can bring the handshake (without record overhead) to:
-
-~~~~
-Client's first flight       48
-Server's first flight       164
-Client's second flight      116
-~~~~
-
-The major potential disadvantage of a compression approach is that it
-makes cTLS and TLS handshakes confusable. For instance, an attacker
-who obtained the handshake keys might be able to undetectably
-transform a cTLS <-> TLS connection into a TLS <-> TLS
-connection. This is easily dealt with by modifying the transcript,
-e.g., by injecting a cTLS extension in the transcript (though not into
-cTLS wire format).
 
 # Security Considerations
 
