@@ -51,10 +51,12 @@ should not be used as a basis for building production systems.
 
 This document specifies a "compact" version of TLS 1.3 {{!RFC8446}}. It is isomorphic
 to TLS 1.3 but designed to take up minimal bandwidth. The space reduction
-is achieved by three basic techniques:
+is achieved by four basic techniques:
 
 - Omitting unnecessary values that are a holdover from previous versions
   of TLS.
+- Omitting the fields and handshake messages required for preserving backwards-compatibility
+  with earlier TLS versions.
 - More compact encodings, omitting unnecessary values.
 - A template-based specialization mechanism that allows for the creation
   of application specific versions of TLS that omit unnecessary
@@ -110,6 +112,8 @@ a vector with a top range of a varint is denoted as:
 With a few exceptions, cTLS replaces every integer in TLS
 with a varint.
 
+[[OPEN ISSUE: Should we just re-encode this directly in CBOR?.
+That might be easier for people, but I ran out of time.]]
 
 ## Record Layer
 
@@ -218,25 +222,6 @@ The cTLS ClientHello is as follows.
       } ClientHello;
 ~~~~
 
-The mapping for TLS 1.3 ciphersuites to their 1 byte equivalent is 
-defined as the low-order byte of the existing TLS 1.3 IANA 
-ciphersuite registry values. 
-
-+------------------------------+-------------+--------+
-| Ciphersuite                  | TLS 1.3 IANA| cTLS   |
-|                              |   Value     |Mapping |
-+------------------------------+-------------+--------+
-| TLS_AES_128_GCM_SHA256       | {0x13,0x01} | 0x01   |
-|                              |             |        |
-| TLS_AES_256_GCM_SHA384       | {0x13,0x02} | 0x02   |
-|                              |             |        |
-| TLS_CHACHA20_POLY1305_SHA256 | {0x13,0x03} | 0x03   |
-|                              |             |        |
-| TLS_AES_128_CCM_SHA256       | {0x13,0x04} | 0x04   |
-|                              |             |        |
-| TLS_AES_128_CCM_8_SHA256     | {0x13,0x05} | 0x05   |
-+------------------------------+-------------+--------+             
-
 [[TODO: Define single-byte mappings of the cipher suites and
 protocol version.]]
 
@@ -280,24 +265,9 @@ Overhead: 6 bytes
 of the key share and another byte by only allowing the client
 to send one key share (so group wasn't needed)..]]
 
-This specification defines a mapping of the named groups
-defined in TLS 1.3. An extra column in the IANA mantained 
-TLS Supported Groups registry provides this information. 
 
-+------------------------------+-------------+--------+
-| Elliptic Curve Groups (ECDHE)| Current IANA| cTLS   |
-|                              |   Value     |Mapping |
-+------------------------------+-------------+--------+
-| secp256r1                    | 0x0017      | 0x01   |
-|                              |             |        |
-| secp384r1                    | 0x0018      | 0x02   |
-|                              |             |        |
-| secp521r1                    | 0x0019      | 0x03   |
-|                              |             |        |
-| x25519                       | 0x001D      | 0x04   |
-|                              |             |        |
-| x448                         | 0x001E      | 0x05   |
-+------------------------------+-------------+--------+
+[[TODO: Need to define a single-byte list of NamedGroups]].
+
 
 ### PreSharedKeys
 
@@ -436,14 +406,14 @@ Version (integer):
 : indicates that both sides agree to the
 single TLS version specified by the given integer value
 (772 == 0x0304 for TLS 1.3). The ClientHello.versions
-field field is omitted and reconstructed in the transcript
+field is omitted and reconstructed in the transcript
 as a single-valued list with the specified value. The ServerHello.version field is
 omitted and reconstructed in the transcript as the specified value.
 
 CipherSuite (string):
 : indicates that both sides agree to
 the single named cipher suite, using the "TLS_AEAD_HASH" syntax
-defined in {{RFC8446}}, section 8.4. The ClientHello.cipher_suites
+defined in {{RFC8446}}, Section 8.4. The ClientHello.cipher_suites
 field is omitted and reconstructed in the transcript as a single-valued
 list with the specified value. The server_hello.cipher_suite field is
 omitted and reconstructed in the transcript as the specified value.
@@ -452,7 +422,7 @@ Random (integer):
 : indicates that the ClientHello.Random and ServerHello.Random values
 are truncated to the given values. When the transcript is
 reconstructed, the Random is padded to the right with 0s and the
-anti-downgrade mechanism in {{RFC8446)}, section 4.1.3 is disabled.
+anti-downgrade mechanism in {{RFC8446)}, Section 4.1.3 is disabled.
 IMPORTANT: Using short Random values can lead to potential
 attacks. When Random values are shorter than 8 bytes, PSK-only modes
 MUST NOT be used, and each side MUST use fresh DH ephemerals.
@@ -536,7 +506,7 @@ The following section provides some example specializations.
 TLS 1.3 only:
 ~~~~
 {
-   “Version” : 0x0304
+   "Version" : 0x0304
 }
 ~~~~
 
@@ -544,14 +514,14 @@ TLS 1.3 with AES_GCM and X25519 and ALPN h2, short random values,
 and everything else is ordinary TLS 1.3.
 
 {
-   “Version” : 0x0304,
-   “Random”: 16,
-   “CipherSuite” : “TLS_AES_128_GCM_SHA256”,
+   "Version" : 0x0304,
+   "Random": 16,
+   "CipherSuite" : "TLS_AES_128_GCM_SHA256",
    "DHGroup": X25519,
-   “Extensions”: {
-      “named_groups”: “<the hex for X25519”
-      “application_layer_protocol_negotiation” : “030016832”,
-      “...” : null,
+   "Extensions": {
+      "named_groups": "0x001D",
+      "application_layer_protocol_negotiation” : "030016832",
+      "..." : null
     }
 }
 
@@ -564,7 +534,6 @@ analysis. The idea here is that cTLS is isomorphic to TLS 1.3, and
 therefore should provide equivalent security guarantees, modulo use of
 new features such as KeyID certificate messages.
 
-
 One piece that is a new TLS 1.3 feature is the addition of the key_id,
 which definitely requires some analysis, especially as it looks like
 a potential source of identity misbinding. This is entirely separable
@@ -574,8 +543,7 @@ need further analysis.
 
 # IANA Considerations
 
-IANA is requested to add an extra column to the TLS Supported Groups registry 
-to include a mapping for named groups used by cTLS. 
+This document has no IANA actions.
 
 
 
@@ -584,4 +552,4 @@ to include a mapping for named groups used by cTLS.
 # Acknowledgments
 {:numbered="false"}
 
-TODO acknowledge.
+We would like to thank Karthikeyan Bhargavan, Owen Friel, Sean Turner, and Chris Wood.
