@@ -341,8 +341,7 @@ Unchanged.
 
 ### HelloRetryRequest
 
-[[TODO]]
-
+The HelloRetryRequest has the same format as a ServerHello message. The "supported_versions" extension is encoded in the version field. 
 
 # Template-Based Specialization
 
