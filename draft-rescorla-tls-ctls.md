@@ -514,18 +514,19 @@ TLS 1.3 with AES_GCM and X25519 and ALPN h2, short random values,
 and everything else is ordinary TLS 1.3.
 
 {
-   "Version" : 0x0304,
+   "Version" : 772,
    "Random": 16,
    "CipherSuite" : "TLS_AES_128_GCM_SHA256",
-   "DHGroup": X25519,
+   "DHGroup": "X25519",
    "Extensions": {
-      "named_groups": "0x001D",
-      "application_layer_protocol_negotiation” : "030016832",
+      "named_groups": 29,
+      "application_layer_protocol_negotiation" : "030016832",
       "..." : null
     }
 }
 
-
+Version 772 corresponds to the hex representation 0x0304, named group "29" 
+(0x001D) represents X25519.
 
 # Security Considerations
 
