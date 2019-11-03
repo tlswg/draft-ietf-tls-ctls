@@ -38,7 +38,8 @@ This document specifies a "compact" version of TLS 1.3. It is isomorphic
 to TLS 1.3 but saves space by aggressive use of defaults and tighter
 encodings. CTLS is not interoperable with TLS 1.3, but it should
 eventually be possible for the server to distinguish TLS 1.3 and CTLS handshakes.
-
+The compact handshake defined here can be used in the context of a TLS-like
+integrated protocol, or extracted for use in other protocols.
 
 --- middle
 
@@ -52,10 +53,10 @@ This document specifies a "compact" version of TLS 1.3 {{!RFC8446}}. It is isomo
 to TLS 1.3 but designed to take up minimal bandwidth. The space reduction
 is achieved by two basic techniques:
 
+- More compact encodings, omitting unnecessary values.
+
 - Default values for common configurations, thus avoiding the need
   to take up space on the wire.
-
-- More compact encodings, omitting unnecessary values.
 
 For the common (EC)DHE handshake with (EC)DHE and pre-established
 public keys, CTLS achieves an overhead of [TODO] bytes over the minimum
@@ -65,6 +66,20 @@ Because cTLS is semantically equivalent to TLS, it can be viewed either
 as a related protocol or as a compression mechanism. Specifically, it
 can be implemented by a layer between the TLS handshake state
 machine and the record layer. See {{compression-layer}} for more details.
+
+## Protocol Embedding
+
+Most of the simplification in this protocol is focused on the TLS handshake,
+since that is where most of the complexity of TLS resides.  This compact
+handshake protocol should be usable in two different contexts: In an integrated
+protocol with the same application sematics as TLS, or as an independent
+Authenticated Key Exchange for use in other protocols (e.g., OSCORE).
+
+In the former case, handshake messages would be encapsulated in MLSPlaintext
+objects, as in TLS.  In the latter case, the sequences of handshake messages
+would be carried directly in the application protocol (as TLSCiphertext
+messages, when encrypted).  We assume that the application protocol will delimit
+messages as needed.
 
 # Conventions and Definitions
 
@@ -105,6 +120,20 @@ a vector with a top range of a varint is denoted as:
 
 [[OPEN ISSUE: Should we just re-encode this directly in CBOR?.
 That might be easier for people, but I ran out of time.]]
+
+## Remainder-of-Data Vectors
+
+[[ XXX-RLB: This is how I would do this if we're going to do it, but I don't
+think we actually want to, as noted below ]]
+
+When a struct is always carried in a length-delimited field (e.g., an extension
+data body), the last vector in the struct does not need to be length-delimited,
+since it takes up all remaining data in the field.  Such vectors are denoted in
+the following form:
+
+~~~~~
+     opaque foo<*>;
+~~~~~
 
 ## Record Layer
 
@@ -151,7 +180,6 @@ layer except that the length is a varint.
 ~~~~
       struct {
           HandshakeType msg_type;    /* handshake type */
-          varint length;             // CHANGED
           select (Handshake.msg_type) {
               case client_hello:          ClientHello;
               case server_hello:          ServerHello;
@@ -167,14 +195,12 @@ layer except that the length is a varint.
       } Handshake;
 ~~~~
 
-Overhead: 2 bytes per handshake message (min).
+Overhead: 1 bytes per handshake message.
 
-[OPEN ISSUE: This can be shrunk to 1 byte in some cases if we are
-willing to use a custom encoding. There are 11 handshake
-types, so we can use the first 4 bits for the type and
-then the bottom 4 bits for an encoding of the length, but
-we would have to offset that by 16 or so to be able to
-have a meaningful impact.]]
+The major change here compared to the TLS Handshake message is that the length
+octets are removed.  They are unnecessary as long as Handshake message bodies
+(ClientHello, ServerHello, etc.) are self-describing.  This is true of all
+current Handshake message bodies.
 
 ## Extensions
 
@@ -183,11 +209,13 @@ length coded:
 
 ~~~~
     struct {
-        ExtensionType extension_type;
+        varint extension_type;
         opaque extension_data<0..V>;
     } Extension;
 ~~~~
 
+This allows any extension with an extension type and extension data length both
+less than 64 to be encoded with only two bytes of overhead.
 
 # Handshake Messages
 
@@ -208,7 +236,7 @@ The CTLS ClientHello is as follows.
           ProtocolVersion versions<0..255>;
           Random random;
           CipherSuite cipher_suites<1..V>;
-          Extension extensions[remainder_of_message];
+          Extension extensions<*>;
       } ClientHello;
 ~~~~
 
@@ -239,8 +267,41 @@ Overhead: 8 bytes (min)
 * CipherSuites: 1 + # Suites
 * Key shares: 2 + 2 * # shares
 
+[[ XXX-RLB: My alternate proposal follows.  Note that this really does just
+strip unnecessary stuff, and doesn't change anything else.  All of the defaults
+are left to the compression layer ]]
+
+[[ XXX-RLB: In particular, I don't think you want to extensions to be `<*>`, since
+then the ClientHello has to be length-delimited, which is more expensive than
+the extensions length.  Ditto for ServerHello. ]]
+
+The CTLS ClientHello is as follows:
+
+~~~~
+      struct {
+          Random random;
+          CipherSuite cipher_suites<1..V>;
+          Extension extensions<0..V>;
+      } ClientHello;
+~~~~
+
+Overhead: 1 byte (minimum) for the length of the cipher_suites array
+
+Relative to the TLS ClientHello, this message omits unneeded fields, and encodes
+lengths as varints.
+
+Depending on the compression profile in use, some changes
+may be made to this message:
+
+* The random field may be shortened or removed
+* The cipher_suites vector may be removed
+* Certain extensions might be suppressed
+
+The conditions for these changes are described below.
 
 ### KeyShare
+
+[[ XXX-RLB: I wouldn't bother with this in this iteration. ]]
 
 The KeyShare extension is redefined as:
 
@@ -281,8 +342,28 @@ Overhead: 6 bytes
 * Cipher Suite: 1
 * KeyShare: 4 bytes
 
+[[ XXX-RLB: My alternate proposal follows.  Same comments as ClientHello above ]]
+
+We redefine ServerHello in a similar way:
+
+~~~~
+      struct {
+          Random random;
+          CipherSuite cipher_suite;
+          Extension extensions<0..V>;
+      } ServerHello;
+~~~~
+
+These fields have the same semantics as the corresponding fields in the TLS
+ServerHello.  The only difference is that unnecessary fields have been removed.
+
+As with ClientHello, all three of these fields can be reduced or eliminated by a
+compression profile.
 
 ### KeyShare
+
+[[ XXX-RLB: I would remove this section as well ]]
+
 ~~~~
       struct {
           KeyShareEntry server_share;
@@ -299,15 +380,14 @@ to send one key share (so group wasn't needed)..]]
 
 ### PreSharedKeys
 
+[[ XXX-RLB: I would remove this section as well ]]
+
 [[TODO]]
 
 
 ## EncryptedExtensions
 
-Unchanged.
-
-[[OPEN ISSUE: We could save 2 bytes in handshake header by
-omitting this value when it's unneeded.]]
+This message is the same as the corresponding TLS message, except that 
 
 ## CertificateRequest
 
@@ -316,11 +396,9 @@ re-encodes the extensions.
 
 ~~~~
       struct {
-          Extension extensions[remainder of message];
+          Extension extensions<0..V>;
       } CertificateRequest;
 ~~~~
-
-
 
 ## Certificate
 
@@ -346,14 +424,16 @@ We can slim down the Certficate message somewhat.
       } CertificateEntry;
 
       struct {
-          CertificateEntry certificate_list[rest of extension];
+          CertificateEntry certificate_list<1..V>;
       } Certificate;
 ~~~~
 
-For a single certificate, this message will have a minumum of 2 bytes of
-overhead for the two length bytes.
+For a single certificate, this message will have a minumum of 3 bytes of
+overhead for the lengths of the certificate_list field, the cert_data field, and
+the extensions field.
 
 [[OPEN ISSUE: What should the default type be?]]
+[[ XXX-RLB: No default type.  Same as TLS. ]]
 
 ### Key IDs
 
@@ -361,6 +441,10 @@ WARNING: This is a new feature which has not seen any analysis
 and so may have real problems.
 
 [[OPEN ISSUE: Do we want this at all?]]
+
+[[ XXX-RLB: My opening offer would be to not change this at all.  Just use the
+existing certificate types, but have the compression layer swap the cert_data in
+and out. ]]
 
 It may also be possible to slim down the Certificate message further,
 by adding a KeyID-based mode, in which they keys were just a table
@@ -395,9 +479,11 @@ Remove the signature algorithm and assume it's tied to the
 key. Note that this does not work for RSA keys, but if
 we just decide to be EC only, it works fine.
 
+[[ XXX-RLB: Unnecessary change.  I would leave it in for now. ]]
+
 ~~~~
       struct {
-          opaque signature[rest of message];
+          opaque signature<1..V>;
       } CertificateVerify;
 ~~~~
 
@@ -407,10 +493,16 @@ Unchanged.
 
 ### HelloRetryRequest
 
-[[TODO]]
+[[ TODO ]]
 
+[[ XXX-RLB: With the one-octet Handshake framing, I think we could probably do
+this in the obvious way. ]]
 
 # Handshake Size Calculations
+
+[[ XXX-RLB: I would push this to the end, so that compression can naturally be
+included in the analysis.  It might also be easier to just walk through some
+example handshakes. ]]
 
 This section provides the size of cTLS handshakes with various
 parameters [[TODO: Fill this out with more options.]]
@@ -419,13 +511,13 @@ parameters [[TODO: Fill this out with more options.]]
 
 We compute the total flight size with X25519 and P-256 signatures,
 thus the keys are 32-bytes long and the signatures 64 bytes,
-with a cipher with an 8 byte auth tag, as in AEAD_AES_128_CCM_8.
+with a cipher with an 8 byte auth tag, as in AEAD\_AES\_128\_CCM\_8.
 [Note: GCM should not be used with a shortened tag.]
 Overhead estimates marked with *** have been verified with Mint.
 Others are hand calculations and so may prove to be approximate.
 
 
-### Flight 1 (ClientHello) ***
+### Flight 1 (ClientHello)
 
 * Random: 16
 * KeyShare: 32
@@ -437,7 +529,7 @@ Others are hand calculations and so may prove to be approximate.
 
 ### Flight 2 (ServerHello..Finished)
 
-ServerHello ***
+ServerHello
 
 * Random: 16
 * KeyShare: 32
@@ -445,12 +537,12 @@ ServerHello ***
 * Handshake Overhead: 2
 * Total: 56
 
-EncryptedExtensions ***
+EncryptedExtensions
 
 * Handshake Overhead: 2
 * Total: 2
 
-CertificateRequest ***
+CertificateRequest
 
 * Handshake Overhead: 2
 * Total: 2
@@ -556,6 +648,31 @@ transform a cTLS <-> TLS connection into a TLS <-> TLS
 connection. This is easily dealt with by modifying the transcript,
 e.g., by injecting a cTLS extension in the transcript (though not into
 cTLS wire format).
+
+## Compression Profiles
+
+[[ XXX-RLB: I think we need to include this, because it lets us be simpler in
+the message structure changes while getting better compression.  Sketch here for
+now, see the code in mint for details. ]]
+
+### Predefined Extensions
+
+On compress:
+* Extensions in the map are not serialized
+* It is an error if any of the following occur
+  * The value of an extension in the map differs from the value in the map
+  * An extension in the map is not provided
+* ... because then decompression will produce a different result
+
+On decompress:
+* Extensions in the map are added to the decompressed extension list
+* It is an error if an extension in the map is present in the compressed list
+  with a different value than is specified in the map
+
+### ClientHello Constraints
+
+### ServerHello Constraints
+
 
 # Security Considerations
 
