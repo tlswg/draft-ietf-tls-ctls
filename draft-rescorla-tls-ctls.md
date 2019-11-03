@@ -425,11 +425,11 @@ is a layer between the handshake and the record layer:
 ~~~~~
 HandshakeCompression ::= {
   CipherSuite: CipherSuite,
-	ClientHello: ClientHelloConstraints,
-	ServerHello: ServerHelloConstraints,
-	EncryptedExtensions: PredefinedExtensions,
-	CertificateRequest: CertificateRequestConstraints,
-	Certificate: CertificateConstraints,
+  ClientHello: ClientHelloConstraints,
+  ServerHello: ServerHelloConstraints,
+  EncryptedExtensions: PredefinedExtensions,
+  CertificateRequest: CertificateRequestConstraints,
+  Certificate: CertificateConstraints,
 }
 ~~~~~
 
@@ -523,39 +523,39 @@ make the first byte not 0x30.
 #### Mutual certificate authentication with specified algorithms
 
 ~~~~~
-	compression := &SlimCompression{
-		CipherSuite: &suite,
+  compression := &SlimCompression{
+    CipherSuite: &suite,
 
-		ClientHello: ClientHelloConstraints{
-			RandomSize: randomSize,
-			Extensions: PredefinedExtensions{
-				ExtensionTypeServerName:          unhex("000e00000b6578616d706c652e636f6d"),
-				ExtensionTypeSupportedGroups:     unhex(fmt.Sprintf("0002%04x", group)),
-				ExtensionTypeSignatureAlgorithms: unhex(fmt.Sprintf("0002%04x", scheme)),
-				ExtensionTypeSupportedVersions:   unhex("020304"),
-			},
-		},
+    ClientHello: ClientHelloConstraints{
+      RandomSize: randomSize,
+      Extensions: PredefinedExtensions{
+        ExtensionTypeServerName:          unhex("000e00000b6578616d706c652e636f6d"),
+        ExtensionTypeSupportedGroups:     unhex(fmt.Sprintf("0002%04x", group)),
+        ExtensionTypeSignatureAlgorithms: unhex(fmt.Sprintf("0002%04x", scheme)),
+        ExtensionTypeSupportedVersions:   unhex("020304"),
+      },
+    },
 
-		ServerHello: ServerHelloConstraints{
-			RandomSize: randomSize,
-			Extensions: PredefinedExtensions{
-				ExtensionTypeSupportedVersions: unhex("0304"),
-			},
-		},
+    ServerHello: ServerHelloConstraints{
+      RandomSize: randomSize,
+      Extensions: PredefinedExtensions{
+        ExtensionTypeSupportedVersions: unhex("0304"),
+      },
+    },
 
-		CertificateRequest: CertificateRequestConstraints{
-			Extensions: PredefinedExtensions{
-				ExtensionTypeSignatureAlgorithms: unhex(fmt.Sprintf("0002%04x", scheme)),
-			},
-		},
+    CertificateRequest: CertificateRequestConstraints{
+      Extensions: PredefinedExtensions{
+        ExtensionTypeSignatureAlgorithms: unhex(fmt.Sprintf("0002%04x", scheme)),
+      },
+    },
 
-		Certificate: CertificateConstraints{
-			KnownCerts: map[string][]byte{
-				"a": serverCert.Raw,
-				"b": clientCert.Raw,
-			},
-		},
-	}
+    Certificate: CertificateConstraints{
+      KnownCerts: map[string][]byte{
+        "a": serverCert.Raw,
+        "b": clientCert.Raw,
+      },
+    },
+  }
 ~~~~~
 
 #### Pre-shared Keys
@@ -565,30 +565,30 @@ Omit rules.  So really the only difference between this and the above would be
 the PSKKeyExchangeModes suppression. ]]
 
 ~~~~~
-	compression := &SlimCompression{
-		CipherSuite: &suite,
+  compression := &SlimCompression{
+    CipherSuite: &suite,
 
-		ClientHello: ClientHelloConstraints{
-			RandomSize: randomSize,
-			Extensions: PredefinedExtensions{
-				ExtensionTypeServerName:          unhex("000e00000b6578616d706c652e636f6d"),
-				ExtensionTypeSupportedGroups:     unhex(fmt.Sprintf("0002%04x", group)),
-				ExtensionTypeSignatureAlgorithms: unhex(fmt.Sprintf("0002%04x", scheme)),
-				ExtensionTypeSupportedVersions:   unhex("020304"),
-				ExtensionTypePSKKeyExchangeModes: unhex("0100"),
-			},
-		},
+    ClientHello: ClientHelloConstraints{
+      RandomSize: randomSize,
+      Extensions: PredefinedExtensions{
+        ExtensionTypeServerName:          unhex("000e00000b6578616d706c652e636f6d"),
+        ExtensionTypeSupportedGroups:     unhex(fmt.Sprintf("0002%04x", group)),
+        ExtensionTypeSignatureAlgorithms: unhex(fmt.Sprintf("0002%04x", scheme)),
+        ExtensionTypeSupportedVersions:   unhex("020304"),
+        ExtensionTypePSKKeyExchangeModes: unhex("0100"),
+      },
+    },
 
-		ServerHello: ServerHelloConstraints{
-			RandomSize: randomSize,
-			Extensions: PredefinedExtensions{
-				ExtensionTypeSupportedVersions: unhex("0304"),
-			},
-		},
+    ServerHello: ServerHelloConstraints{
+      RandomSize: randomSize,
+      Extensions: PredefinedExtensions{
+        ExtensionTypeSupportedVersions: unhex("0304"),
+      },
+    },
 
-		CertificateRequest: CertificateRequestConstraints{Omit: true},
-		Certificate:        CertificateConstraints{Omit: true},
-	}
+    CertificateRequest: CertificateRequestConstraints{Omit: true},
+    Certificate:        CertificateConstraints{Omit: true},
+  }
 ~~~~~
 
 ## Specifying a Specialization
