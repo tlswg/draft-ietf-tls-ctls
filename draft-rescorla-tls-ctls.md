@@ -218,6 +218,25 @@ The cTLS ClientHello is as follows.
       } ClientHello;
 ~~~~
 
+The mapping for TLS 1.3 ciphersuites to their 1 byte equivalent is 
+defined as the low-order byte of the existing TLS 1.3 IANA 
+ciphersuite registry values. 
+
++------------------------------+-------------+--------+
+| Ciphersuite                  | TLS 1.3 IANA| cTLS   |
+|                              |   Value     |Mapping |
++------------------------------+-------------+--------+
+| TLS_AES_128_GCM_SHA256       | {0x13,0x01} | 0x01   |
+|                              |             |        |
+| TLS_AES_256_GCM_SHA384       | {0x13,0x02} | 0x02   |
+|                              |             |        |
+| TLS_CHACHA20_POLY1305_SHA256 | {0x13,0x03} | 0x03   |
+|                              |             |        |
+| TLS_AES_128_CCM_SHA256       | {0x13,0x04} | 0x04   |
+|                              |             |        |
+| TLS_AES_128_CCM_8_SHA256     | {0x13,0x05} | 0x05   |
++------------------------------+-------------+--------+             
+
 [[TODO: Define single-byte mappings of the cipher suites and
 protocol version.]]
 
