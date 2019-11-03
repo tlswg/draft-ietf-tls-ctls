@@ -261,9 +261,24 @@ Overhead: 6 bytes
 of the key share and another byte by only allowing the client
 to send one key share (so group wasn't needed)..]]
 
+This specification defines a mapping of the named groups
+defined in TLS 1.3. An extra column in the IANA mantained 
+TLS Supported Groups registry provides this information. 
 
-[[TODO: Need to define a single-byte list of NamedGroups]].
-
++------------------------------+-------------+--------+
+| Elliptic Curve Groups (ECDHE)| Current IANA| cTLS   |
+|                              |   Value     |Mapping |
++------------------------------+-------------+--------+
+| secp256r1                    | 0x0017      | 0x01   |
+|                              |             |        |
+| secp384r1                    | 0x0018      | 0x02   |
+|                              |             |        |
+| secp521r1                    | 0x0019      | 0x03   |
+|                              |             |        |
+| x25519                       | 0x001D      | 0x04   |
+|                              |             |        |
+| x448                         | 0x001E      | 0x05   |
++------------------------------+-------------+--------+
 
 ### PreSharedKeys
 
@@ -540,7 +555,8 @@ need further analysis.
 
 # IANA Considerations
 
-This document has no IANA actions.
+IANA is requested to add an extra column to the TLS Supported Groups registry 
+to include a mapping for named groups used by cTLS. 
 
 
 
