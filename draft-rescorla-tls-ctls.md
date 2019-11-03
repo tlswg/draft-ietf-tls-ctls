@@ -270,15 +270,26 @@ Overhead: 6 bytes
 
 
 ### KeyShare
+
+In cTLS the client only provides a single key share to the server, 
+which represents reduced functionality compared to TLS 1.3 where the 
+client can send a number of key shares. 
+
+The KeyShareClientHello extension is defined as follows:
+
+~~~~
+      struct {
+          KeyShareEntry client_shares;
+      } KeyShareClientHello;
+~~~~
+
+The KeyShareServerHello extension is defined as follows:
+
 ~~~~
       struct {
           KeyShareEntry server_share;
       } KeyShareServerHello;
 ~~~~
-
-[[OPEN ISSUE: We could save one byte here by removing the length
-of the key share and another byte by only allowing the client
-to send one key share (so group wasn't needed)..]]
 
 This specification defines a mapping of the named groups
 defined in TLS 1.3. An extra column in the IANA mantained 
