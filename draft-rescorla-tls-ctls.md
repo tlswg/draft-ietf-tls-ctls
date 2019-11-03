@@ -420,6 +420,177 @@ is a layer between the handshake and the record layer:
 +---------------+---------------+---------------+
 ~~~~~
 
+## Specializing the Handshake
+
+~~~~~
+HandshakeCompression ::= {
+  CipherSuite: CipherSuite,
+	ClientHello: ClientHelloConstraints,
+	ServerHello: ServerHelloConstraints,
+	EncryptedExtensions: PredefinedExtensions,
+	CertificateRequest: CertificateRequestConstraints,
+	Certificate: CertificateConstraints,
+}
+~~~~~
+
+When CipherSuite is provided:
+* On compress: 
+  * Don't serialize relevant fields in CH/SH
+  * CH compress error if other ciphersuites offered
+  * SH error if other ciphersuite chosen
+* On decompress: Fill in one-element list in CH / value in SH
+
+### Predefined Extensions
+
+~~~~~
+PredefinedExtensions ::= {
+  extension_type: extension_value,
+}
+~~~~~
+
+On compress:
+* Extensions in the map are not serialized
+* It is an error if any of the following occur
+  * The value of an extension in the map differs from the value in the map
+  * An extension in the map is not provided
+* ... because then decompression will produce a different result
+
+On decompress:
+* Extensions in the map are added to the decompressed extension list
+* It is an error if an extension in the map is present in the compressed list
+  with a different value than is specified in the map
+
+This is how you nail down versions, curves, signature algorithms, etc.  APIs can
+provide nice interfaces to this.
+
+### ClientHello Constraints
+
+~~~~~
+ClientHelloConstraints ::= {
+  RandomSize: integer,
+  Extensions: PredefinedExtensions,
+}
+~~~~~
+
+If RandomSize is provided:
+* On compress: 
+  * Only serialize first RandomSize bytes of Random
+  * Error if any subsequent bytes are non-zero
+* On decompress:
+  * Copy RandomSize bytes to beginning of random
+  * Subsequent bytes are zero
+
+### ServerHello Constraints
+
+~~~~~
+ServerHelloConstraints ::= {
+  RandomSize: integer,
+  Extensions: PredefinedExtensions,
+}
+~~~~~
+
+RandomSize as for CH
+
+### CertificateRequest Constraints
+
+~~~~~
+CertificateRequestHelloConstraints ::= {
+  Extensions: PredefinedExtensions,
+}
+~~~~~
+
+###  Certificate Contraints
+
+~~~~~
+CertificateConstraints ::= {
+  KnownCertificates: map[bytes]bytes
+  Extensions: PredefiendExtensions
+}
+~~~~~
+
+KnownCertificates is a straight up compression dictionary.
+
+* On compress: If cert_data matches a value in the map, replace with the key
+* On decompress: If cert_data matches a key in the map, replace with the value
+
+Application is responsible for avoiding collisions.  For X509, sufficient to
+make the first byte not 0x30.
+
+### Example specializations
+
+[[ XXX-RLB: These are just copied from my code.  They could look nicer. ]]
+
+#### Mutual certificate authentication with specified algorithms
+
+~~~~~
+	compression := &SlimCompression{
+		CipherSuite: &suite,
+
+		ClientHello: ClientHelloConstraints{
+			RandomSize: randomSize,
+			Extensions: PredefinedExtensions{
+				ExtensionTypeServerName:          unhex("000e00000b6578616d706c652e636f6d"),
+				ExtensionTypeSupportedGroups:     unhex(fmt.Sprintf("0002%04x", group)),
+				ExtensionTypeSignatureAlgorithms: unhex(fmt.Sprintf("0002%04x", scheme)),
+				ExtensionTypeSupportedVersions:   unhex("020304"),
+			},
+		},
+
+		ServerHello: ServerHelloConstraints{
+			RandomSize: randomSize,
+			Extensions: PredefinedExtensions{
+				ExtensionTypeSupportedVersions: unhex("0304"),
+			},
+		},
+
+		CertificateRequest: CertificateRequestConstraints{
+			Extensions: PredefinedExtensions{
+				ExtensionTypeSignatureAlgorithms: unhex(fmt.Sprintf("0002%04x", scheme)),
+			},
+		},
+
+		Certificate: CertificateConstraints{
+			KnownCerts: map[string][]byte{
+				"a": serverCert.Raw,
+				"b": clientCert.Raw,
+			},
+		},
+	}
+~~~~~
+
+#### Pre-shared Keys
+
+[[ XXX-RLB: If we have one-byte handshake framing, we can get away without the
+Omit rules.  So really the only difference between this and the above would be
+the PSKKeyExchangeModes suppression. ]]
+
+~~~~~
+	compression := &SlimCompression{
+		CipherSuite: &suite,
+
+		ClientHello: ClientHelloConstraints{
+			RandomSize: randomSize,
+			Extensions: PredefinedExtensions{
+				ExtensionTypeServerName:          unhex("000e00000b6578616d706c652e636f6d"),
+				ExtensionTypeSupportedGroups:     unhex(fmt.Sprintf("0002%04x", group)),
+				ExtensionTypeSignatureAlgorithms: unhex(fmt.Sprintf("0002%04x", scheme)),
+				ExtensionTypeSupportedVersions:   unhex("020304"),
+				ExtensionTypePSKKeyExchangeModes: unhex("0100"),
+			},
+		},
+
+		ServerHello: ServerHelloConstraints{
+			RandomSize: randomSize,
+			Extensions: PredefinedExtensions{
+				ExtensionTypeSupportedVersions: unhex("0304"),
+			},
+		},
+
+		CertificateRequest: CertificateRequestConstraints{Omit: true},
+		Certificate:        CertificateConstraints{Omit: true},
+	}
+~~~~~
+
 ## Specifying a Specialization
 
 A specific instantiation of a specialized version of TLS is
@@ -539,6 +710,10 @@ All of these are encoded using the usual TLS extension encoding.
 
 [[ TODO ]]
 
+[[ XXX-RLB: You basically want a map[bytes]bytes here, such that on compression,
+you map cert_data values->keys and do the reverse on decompression.  It is up to the
+application to prevent collisions between ID values and real values.
+
 
 # Examples
 
@@ -565,8 +740,6 @@ and everything else is ordinary TLS 1.3.
       “...” : null,
     }
 }
-
-
 
 # Security Considerations
 
