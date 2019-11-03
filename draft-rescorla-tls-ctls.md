@@ -115,22 +115,33 @@ That might be easier for people, but I ran out of time.]]
 
 ## Record Layer
 
-The cTLS Record Layer assumes that records are externally framed
+
+The CTLS Record Layer borrows from the DTLS 1.3 record layer design. 
+
+When cTLS is communicated over reliable transport we use TLSPlaintext
+and TLSCiphertext as names for the header structures. 
+
+When cTLS is communicated over unreliable transport then the DTLSPlaintext, 
+and DTLSCiphertext header structures are used instead. The DTLSCiphertext
+structure is defined in Section 4 of {{!I-D.ietf-tls-dtls13}}.
+
+The CTLS Record Layer assumes that records are externally framed
 (i.e., that the length is already known because it is carried in a UDP
 datagram or the like). Depending on how this was carried, you might
 need another byte or two for that framing. Thus, only the type byte
-need be carried and TLSPlaintext becomes:
+need be carried. Thus, 
+
+The TLSPlaintext becomes:
 
 ~~~~
       struct {
           ContentType type;
+          uint16 length;
           opaque fragment[TLSPlaintext.length];
       } TLSPlaintext;
 ~~~~
 
-In addition, because the epoch is known in advance, the
-dummy content type is not needed for the ciphertext, so
-TLSCiphertext becomes:
+The TLSCiphertext becomes:
 
 ~~~~
       struct {
@@ -140,14 +151,46 @@ TLSCiphertext becomes:
       } TLSInnerPlaintext;
 
       struct {
+          opaque unified_hdr[variable];   
           opaque encrypted_record[TLSCiphertext.length];
       } TLSCiphertext;
 ~~~~
 
-Note: The user is responsible for ensuring that the sequence
-numbers/nonces are handled in the usual fashion.
+Note: The unified_hdr format is re-used from Section 4 of DTLS 1.3. 
+Because neither epoch nor sequence numbers need to be explicitly 
+communicated in TLS 1.3 those are ignored and the resulting record 
+layer format for cTLS over a reliable transport looks as follows:
+The sequence number field is omitted. 
 
-Overhead: 1 byte per record.
+~~~~
+   0 1 2 3 4 5 6 7
+   +-+-+-+-+-+-+-+-+
+   |0|0|1|C|X|L|X X|
+   +-+-+-+-+-+-+-+-+
+   | Connection ID |   Legend:
+   | (if any,      |
+   /  length as    /   C   - Connection ID (CID) present
+   |  negotiated)  |   S   - Sequence number length **
+   +-+-+-+-+-+-+-+-+   X   - Not applicable/ignored
+   | 16 bit Length |   
+   | (if present)  |
+   +-+-+-+-+-+-+-+-+
+~~~~
+                                  
+The DTLSPlaintext becomes:
+
+~~~~
+   struct {
+       opaque unified_hdr[variable];       
+       ContentType type;
+       uint16 length;
+       opaque fragment[DTLSPlaintext.length];
+   } DTLSPlaintext;
+~~~~
+
+The DTLSInnerPlaintext and the DTLSCiphertext for use with unreliable 
+transports of cTLS are re-used from Section 4 of DTLS 1.3.
+
 
 
 ## Handshake Layer
