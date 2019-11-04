@@ -68,9 +68,9 @@ is achieved by four basic techniques:
   of application specific versions of TLS that omit unnecessary
   valuses.
 
-For the common (EC)DHE handshake with (EC)DHE and pre-established
-public keys, cTLS achieves an overhead of [TODO] bytes over the minimum
-required by the cryptovariables.
+For the common (EC)DHE handshake with pre-established certificates, cTLS
+achieves an overhead of [TODO] bytes over the minimum required by the
+cryptovariables.
 
 Because cTLS is semantically equivalent to TLS, it can be viewed either
 as a related protocol or as a compression mechanism. Specifically, it
