@@ -152,8 +152,6 @@ TLSCiphertext becomes:
 Note: The user is responsible for ensuring that the sequence
 numbers/nonces are handled in the usual fashion.
 
-Overhead: 1 byte per record.
-
 
 ## Handshake Layer
 
@@ -177,15 +175,6 @@ layer except that the length is a varint.
           };
       } Handshake;
 ~~~~
-
-Overhead: 2 bytes per handshake message (min).
-
-[OPEN ISSUE: This can be shrunk to 1 byte in some cases if we are
-willing to use a custom encoding. There are 11 handshake
-types, so we can use the first 4 bits for the type and
-then the bottom 4 bits for an encoding of the length, but
-we would have to offset that by 16 or so to be able to
-have a meaningful impact.]]
 
 ## Extensions
 
@@ -212,12 +201,10 @@ up to remove pre TLS 1.3 baggage.
 The cTLS ClientHello is as follows.
 
 ~~~~
-      uint8 ProtocolVersion;            // 1 byte
       opaque Random[RandomLength];      // variable length
       uint8 CipherSuite;                // 1 byte
 
       struct {
-          ProtocolVersion versions<0..255>;
           Random random;
           CipherSuite cipher_suites<1..V>;
           Extension extensions<1..V>;
@@ -245,11 +232,6 @@ ciphersuite registry values.
 +------------------------------+-------------+--------+
 ~~~~
 
-The versions list from "supported_versions" has moved into
-ClientHello.versions with versions being one byte, but with the modern
-semantics of the client offering N versions and the server picking
-one.
-
 
 ## ServerHello
 
@@ -257,7 +239,6 @@ We redefine ServerHello in a similar way:
 
 ~~~~
       struct {
-          ProtocolVersion version;
           Random random;
           CipherSuite cipher_suite;
           Extension extensions<1..V>;
@@ -265,13 +246,8 @@ We redefine ServerHello in a similar way:
 ~~~~
 
 The extensions have the same default values as in ClientHello,
-so as a practical matter only KeyShare is needed.
-
-Overhead: 6 bytes
-
-* Version: 1
-* Cipher Suite: 1
-* KeyShare: 4 bytes
+so as a practical matter only KeyShare, SupportedGroups, and
+SupportedVersions are needed.
 
 
 ### KeyShare
@@ -393,13 +369,10 @@ The HelloRetryRequest has the following format:
 
 ~~~~
       struct {
-          ProtocolVersion server_version;
           CipherSuite cipher_suite;
           Extension extensions<2..2^16-1>;
       } HelloRetryRequest;
 ~~~~
-
-Note that the "supported_versions" extension is encoded in the server_version field.
 
 # Template-Based Specialization
 
