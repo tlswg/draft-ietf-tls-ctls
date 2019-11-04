@@ -43,8 +43,8 @@ informative:
 This document specifies a "compact" version of TLS 1.3. It is
 isomorphic to TLS 1.3 but saves space by trimming obsolete material,
 tighter encoding, and a template-based specialization technique. cTLS
-is not interoperable with TLS 1.3, but it should eventually be
-possible for the server to distinguish TLS 1.3 and cTLS handshakes.
+is not directly interoperable with TLS 1.3, but it should eventually be
+possible for a cTLS/TLS 1.3 server to exist and successfully interoperate.
 
 
 --- middle
@@ -155,8 +155,12 @@ numbers/nonces are handled in the usual fashion.
 
 ## Handshake Layer
 
-The cTLS handshake layer is the same as the TLS 1.3 handshake
-layer except that the length is a varint.
+The cTLS handshake framing is same as the TLS 1.3 handshake
+framing, except for two changes:
+
+1. The length field is omitted
+1. The HelloRetryRequest message is a true handshake message
+   instead of a specialization of ServerHello.
 
 ~~~~
       struct {
@@ -164,6 +168,7 @@ layer except that the length is a varint.
           select (Handshake.msg_type) {
               case client_hello:          ClientHello;
               case server_hello:          ServerHello;
+              case hello_retry_request:   HelloRetryRequest;
               case end_of_early_data:     EndOfEarlyData;
               case encrypted_extensions:  EncryptedExtensions;
               case certificate_request:   CertificateRequest;
@@ -298,7 +303,7 @@ We can slim down the Certficate message somewhat.
 This just removes the length field.
 ~~~~
       struct {
-          SignatureScheme algorithm; // TODO -- define one byte schemes.
+          SignatureScheme algorithm; // TODO -- define one byte schemes?
           opaque signature<1..V>;
       } CertificateVerify;
 ~~~~
@@ -318,7 +323,8 @@ The HelloRetryRequest has the following format:
       } HelloRetryRequest;
 ~~~~
 
-It is the same as the ServerHello above but without the unused Random value.
+It is the same as the ServerHello above but without the unnecessary
+sentinel Random value.
 
 # Template-Based Specialization
 
@@ -461,7 +467,8 @@ configurable to set the remaining bytes of the random values to zero.  This
 ensures that the reconstructed, padded random value matches the original.
 
 If truncated Finished values are to be used, then the TLS stack MUST be
-configurable so that only the provided bytes of the Finished are verified.
+configurable so that only the provided bytes of the Finished are verified,
+or so that the expected remaining values can be computed.
 
 ### Predefined Extensions
 
@@ -502,6 +509,9 @@ extensions list using the predefined extensions:
 Note that the "version", "dhGroup", and "signatureAlgorithm" fields in the
 compression profile are specific instances of this algorithm for the
 corresponding extensions.
+
+[[OPEN ISSUE: Are there other extensions that would benefit from special
+treatment, as opposed to hex values.]]
 
 ### Known Certificates {#known-certs}
 
