@@ -601,6 +601,7 @@ other than 0x30, since every X.509 certificate starts with this byte.
 The following section provides some example specializations.
 
 TLS 1.3 only:
+
 ~~~~
 {
    "Version" : 0x0304
@@ -610,6 +611,7 @@ TLS 1.3 only:
 TLS 1.3 with AES_GCM and X25519 and ALPN h2, short random values,
 and everything else is ordinary TLS 1.3.
 
+~~~~
 {
    "Version" : 772,
    "Random": 16,
@@ -621,6 +623,7 @@ and everything else is ordinary TLS 1.3.
       "..." : null
     }
 }
+~~~~
 
 Version 772 corresponds to the hex representation 0x0304, named group "29"
 (0x001D) represents X25519.
