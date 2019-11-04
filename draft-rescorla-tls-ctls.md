@@ -341,7 +341,17 @@ Unchanged.
 
 ### HelloRetryRequest
 
-The HelloRetryRequest has the same format as a ServerHello message. The "supported_versions" extension is encoded in the version field. 
+The HelloRetryRequest has the following format: 
+
+~~~~
+      struct {
+          ProtocolVersion server_version;
+          CipherSuite cipher_suite;
+          Extension extensions<2..2^16-1>;
+      } HelloRetryRequest;
+~~~~
+
+Note that the "supported_versions" extension is encoded in the server_version field.
 
 # Template-Based Specialization
 
