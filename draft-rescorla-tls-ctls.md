@@ -226,24 +226,8 @@ The cTLS ClientHello is as follows.
 
 The mapping for TLS 1.3 ciphersuites to their 1 byte equivalent is
 defined as the low-order byte of the existing TLS 1.3 IANA
-ciphersuite registry values.
-
-~~~~
-+------------------------------+-------------+--------+
-| Ciphersuite                  | TLS 1.3 IANA| cTLS   |
-|                              |   Value     |Mapping |
-+------------------------------+-------------+--------+
-| TLS_AES_128_GCM_SHA256       | {0x13,0x01} | 0x01   |
-|                              |             |        |
-| TLS_AES_256_GCM_SHA384       | {0x13,0x02} | 0x02   |
-|                              |             |        |
-| TLS_CHACHA20_POLY1305_SHA256 | {0x13,0x03} | 0x03   |
-|                              |             |        |
-| TLS_AES_128_CCM_SHA256       | {0x13,0x04} | 0x04   |
-|                              |             |        |
-| TLS_AES_128_CCM_8_SHA256     | {0x13,0x05} | 0x05   |
-+------------------------------+-------------+--------+
-~~~~
+ciphersuite registry values. Details are provided in the 
+IANA consideration section. 
 
 The versions list from "supported_versions" has moved into
 ClientHello.versions with versions being one byte, but with the modern
@@ -299,21 +283,7 @@ The KeyShareServerHello extension is defined as follows:
 This specification defines a mapping of the named groups
 defined in TLS 1.3. An extra column in the IANA mantained
 TLS Supported Groups registry provides this information.
-
-+------------------------------+-------------+--------+
-| Elliptic Curve Groups (ECDHE)| Current IANA| cTLS   |
-|                              |   Value     |Mapping |
-+------------------------------+-------------+--------+
-| secp256r1                    | 0x0017      | 0x01   |
-|                              |             |        |
-| secp384r1                    | 0x0018      | 0x02   |
-|                              |             |        |
-| secp521r1                    | 0x0019      | 0x03   |
-|                              |             |        |
-| x25519                       | 0x001D      | 0x04   |
-|                              |             |        |
-| x448                         | 0x001E      | 0x05   |
-+------------------------------+-------------+--------+
+Details are in the IANA consideration section. 
 
 ### PreSharedKeys
 
@@ -659,9 +629,45 @@ to indicate that cTLS is in use and with which profile.
 
 # IANA Considerations
 
-This document has no IANA actions.
+This specifications defines two mappings of existing 
+TLS registry values to cTLS values.
 
+The table below describes the ciphersuite mapping. 
+~~~~
++------------------------------+-------------+--------+
+| Ciphersuite                  | TLS 1.3 IANA| cTLS   |
+|                              |   Value     |Mapping |
++------------------------------+-------------+--------+
+| TLS_AES_128_GCM_SHA256       | {0x13,0x01} | 0x01   |
+|                              |             |        |
+| TLS_AES_256_GCM_SHA384       | {0x13,0x02} | 0x02   |
+|                              |             |        |
+| TLS_CHACHA20_POLY1305_SHA256 | {0x13,0x03} | 0x03   |
+|                              |             |        |
+| TLS_AES_128_CCM_SHA256       | {0x13,0x04} | 0x04   |
+|                              |             |        |
+| TLS_AES_128_CCM_8_SHA256     | {0x13,0x05} | 0x05   |
++------------------------------+-------------+--------+
+~~~~
 
+The second table describes the named curve mapping. 
+
+~~~~
++------------------------------+-------------+--------+
+| Elliptic Curve Groups (ECDHE)| Current IANA| cTLS   |
+|                              |   Value     |Mapping |
++------------------------------+-------------+--------+
+| secp256r1                    | 0x0017      | 0x01   |
+|                              |             |        |
+| secp384r1                    | 0x0018      | 0x02   |
+|                              |             |        |
+| secp521r1                    | 0x0019      | 0x03   |
+|                              |             |        |
+| x25519                       | 0x001D      | 0x04   |
+|                              |             |        |
+| x448                         | 0x001E      | 0x05   |
++------------------------------+-------------+--------+
+~~~~
 
 --- back
 
