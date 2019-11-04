@@ -400,58 +400,64 @@ which is fully general and then remove degrees of freedom, eliding
 parts of the handshake which are used to express those degrees of
 freedom. For example, if we only support one version of TLS, then it
 is not necessary to have version negotiation and the
-ClientHello.version and ServerHello.version fields can be omitted.
+supported_versions extension can be omitted.
+
 Importantly, this process is performed only for the wire encoding but
-not for the handshake transcript.  The result is that the cTLS
-handshake transcript is the same as the corresponding TLS 1.3
-handshake transcript. [[OPEN ISSUE: Except possibly inserting sme
+not for the handshake transcript.  The result is that the transcript for a
+specialized cTLS handshake is the same as the transcript for a TLS 1.3 handshake
+with the same features used. [[OPEN ISSUE: Except possibly inserting sme
 extension indicating the use of cTLS.]]
 
-One way of thinking of this is as if specialization
-is a layer between the handshake and the record layer:
+One way of thinking of this is as if specialization is a stateful compression
+layer between the handshake and the record layer:
 
 ~~~~~
 +---------------+---------------+---------------+
 |   Handshake   |  Application  |     Alert     |
-+---------------+---------------+---------------+
-|               cTLS Compression Layer          |
-+---------------+---------------+---------------+
-|               cTLS Record Layer               |
++---------------+---------------+---------------+    +---------+
+|               cTLS Compression Layer          |<---| Profile |
++---------------+---------------+---------------+    +---------+
+|          cTLS Record Layer / Application      |
 +---------------+---------------+---------------+
 ~~~~~
 
+Specializations are defined by a "compression profile" that specifies what
+features are to be optimized out of the handshake.  In the following
+subsections, we define the structure of these profiles, and how they are used in
+compressing and decompressing handshake messages.
+
 ## Specifying a Specialization
 
-A specific instantiation of a specialized version of TLS is
+A compression profile defining of a specialized version of TLS is
 defined using a JSON dictionary. Each axis of specialization
 is a key in the dictionary. [[OPEN ISSUE: If we ever want to
 serialize this, we'll want to use a list instead.]].
 
 For example, the following specialization describes a protocol
 with a single fixed version (TLS 1.3) and a single fixed
-cipher suite (TLS_AES_128_GCM_SHA256). On the wire,
-ClientHello.versions, ClientHello.cipher_suites,
-ServerHello.version, and ServerHello.cipher_suites would
-be omitted.
+cipher suite (TLS_AES_128_GCM_SHA256). On the wire, ClientHello.cipher_suites,
+ServerHello.cipher_suites, and the supported_versions extensions in the
+ClientHello and ServerHello would be omitted.
 
 ~~~~
 {
-   "Version" : 772,
-   "CipherSuite" : "TLS_AES_128_GCM_SHA256"
+   "version" : 772,
+   "cipherSuite" : "TLS_AES_128_GCM_SHA256"
 }
 ~~~~
 
 cTLS allows specialization along the following axes:
 
-Version (integer):
+version (integer):
 : indicates that both sides agree to the
 single TLS version specified by the given integer value
-(772 == 0x0304 for TLS 1.3). The ClientHello.versions
-field field is omitted and reconstructed in the transcript
-as a single-valued list with the specified value. The ServerHello.version field is
-omitted and reconstructed in the transcript as the specified value.
+(772 == 0x0304 for TLS 1.3). The supported_versions extension
+is omitted from ClientHello.extensions and reconstructed in the transcript as a
+single-valued list with the specified value. The supported_versions extension is
+omitted from ClientHello.extensions and reconstructed in the transcript with the
+specified value.
 
-CipherSuite (string):
+cipherSuite (string):
 : indicates that both sides agree to
 the single named cipher suite, using the "TLS_AEAD_HASH" syntax
 defined in {{RFC8446}}, section 8.4. The ClientHello.cipher_suites
@@ -459,7 +465,19 @@ field is omitted and reconstructed in the transcript as a single-valued
 list with the specified value. The server_hello.cipher_suite field is
 omitted and reconstructed in the transcript as the specified value.
 
-Random (integer):
+dhGroup (string):
+: specifies a single DH group to use for key establishment. The
+group is listed by the code point name in {{RFC8446}}, Section 4.2.7.
+(e.g., x25519). This implies a literal "supported_groups" extension
+consisting solely of this group.
+
+signatureAlgorithm (string):
+: specifies a single signature scheme to use for authentication. The
+group is listed by the code point name in {{RFC8446}}, Section 4.2.7.
+(e.g., x25519). This implies a literal "signature_algorithms" extension
+consisting solely of this group.
+
+randomSize (integer):
 : indicates that the ClientHello.Random and ServerHello.Random values
 are truncated to the given values. When the transcript is
 reconstructed, the Random is padded to the right with 0s and the
@@ -469,76 +487,114 @@ attacks. When Random values are shorter than 8 bytes, PSK-only modes
 MUST NOT be used, and each side MUST use fresh DH ephemerals.
 The Random length MUST be less than or equal to 32 bytes.
 
-Finished (integer):
+clientHelloExtensions (predefined extensions):
+: Predefined ClientHello extensions, see {predefined-extensions}
+
+serverHelloExtensions (predefined extensions):
+: Predefined ServerHello extensions, see {predefined-extensions}
+
+encryptedExtensions (predefined extensions):
+: Predefined EncryptedExtensions extensions, see {predefined-extensions}
+
+certRequestExtensions (predefined extensions):
+: Predefined CertificateRequest extensions, see {predefined-extensions}
+
+knownCertificates (known certificates):
+: A compression dictionary for the Certificate message, see {known-certs}
+
+finishedSize (integer):
 : indicates that the Finished value is to be truncated to the given
 length. When the transcript is reconstructed, the remainder of the
 Finished value is filled in by the receiving side.
 [[OPEN ISSUE: How short should we allow this to be?]]
 
+### Requirements on the TLS Implementation
 
-Extensions (dictionary):
-: a set of extensions which are being specialized, with each one
-having its own dictionary entry. The keys in the dictionary entries
-are the extension names specified in the TLS ExtensionTypeRegistry
-specified in {{RFC8446}}.  Each extension type may have either a
-string value indicating the value of the extension in hex or the value
-null indicating that the extension will be present but serialized as
-described below. If the special extension name "..." is not present,
-then the list of extensions is exhaustive. If present, the extension
-"..." MUST have the value null.
+To be compatible with the specializations described in this section, a
+TLS stack needs to provide two key features:
 
-DHGroup (string):
-: specifies a single DH group to use for key establishment. The
-group is listed by the code point name in {{RFC8446}}, Section 4.2.7.
-(e.g., x25519). This implies a literal "supported_groups" extension
-consisting solely of this group and that there is a
-KeyShare extension consisting solely of the value
-of the KeyShareEntry.key_exchange (without the length bytes).
+If specialization of extensions is to be used, then the TLS stack MUST order
+each vector of Extension values in ascending order according to the
+ExtensionType.  This allows for a deterministic reconstruction of the extension
+list.
 
-SignatureAlgorithms:
-: [[TODO]]
+If truncated Random values are to be used, then the TLS stack MUST be
+configurable to set the remaining bytes of the random values to zero.  This
+ensures that the reconstructed, padded random value matches the original.
 
-HandshakeShape (list):
-: specifies the handshake message which appear in the handshake.
-When present, the handshake messages are serialized in order without
-type or length fields. [[OPEN ISSUE: Not so sure about this.]]
+If truncated Finished values are to be used, then the TLS stack MUST be
+configurable so that only the provided bytes of the Finished are verified.
 
+### Predefined Extensions
 
-### Serializing Extensions
+Extensions used in the ClientHello, ServerHello, EncryptedExtensions, and
+CertificateRequest messages can be "predefined" in a compression profile, so
+that they do not have to be sent on the wire.  A predefined extensions object is
+a dictionary whose keys are extension names specified in the TLS
+ExtensionTypeRegistry specified in {{RFC8446}}.  The corresponding value is a
+hex-encoded value for the ExtensionData field of the extension.
 
-If an extension has a literal value, then it is not encoded on the
-wire at all. The literal value does not include the type and length
-bytes.
+When compressing a handshake message, the sender compares the extensions in the
+message being compressed to the predefined extensions object, applying the
+following rules:
 
-If an extension has the value null, then it is serialized directly,
-but omitting the extension_type value. I.e.,
+* If the extensions list in the message is not sorted in ascending order by
+  extension type, it is an error, because the decompressed message will not
+  match.
+* If there is no entry in the predefined extensions object for the type of the
+  extension, then the extension is included in the compressed message
+* If there is an entry:
+    * If the ExtensionData of the extension does not match the value in the
+      dictionary, it is an error, because decompression will not produce the
+      correct result.
+    * If the ExtensionData matches, then the extension is removed, and not
+      included in the compressed message.
 
-~~~~
-    struct {
-        opaque extension_data<0..V>;
-    } ListedExtension;
-~~~~
+When decompressing a handshake message the receiver reconstitutes the original
+extensions list using the predefined extensions:
 
-The listed extensions MUST be serialized in extension code point
-order (this avoids having to carry the extensions code points on
-the wire).
+* If there is an extension in the compressed message with a type that exists in
+  the predefined extensions object, it is an error, because such an extension
+  would not have been sent by a sender with a compatible compression profile.
+* For each entry in the predefined extensions dictionary, an extension is added
+  to the decompressed message with the specified type and value.
+* The resulting vector of extensions MUST be sorted in ascending order by
+  extension type.
 
-Any other extensions are serialized as usual, using the Extension
-structure, and can appear in any order.
+Note that the "version", "dhGroup", and "signatureAlgorithm" fields in the
+compression profile are specific instances of this algorithm for the
+corresponding extensions.
 
-The corresponding handshake transcript is reconstructed by concatenating:
+### Known Certificates {#known-certs}
 
-- The literal-valued extensions in code point order
-- The listed extensions in code point order
-- Any other extensions in the order they appear on the wire
+Certificates are a major contributor to the size of a TLS handshake.  In order
+to avoid this overhead when the parties to a handshake have already exchanged
+certificates, a compression profile can specify a dictionary of "known
+certificates" that effectively acts as a compression dictionary on certificates.
 
-All of these are encoded using the usual TLS extension encoding.
+A known certicates object is a JSON dictionary whose keys are strings containing
+hex-encoded compressed values.  The corresponding values are hex-encoded strings
+representing the uncompressed values.  For example:
 
+~~~~~
+{
+  "00": "3082...",
+  "01": "3082...",
+}
+~~~~~
 
-# Certificate IDs
+When compressing a Certificate message, the sender examines the cert_data field
+of each CertificateEntry.  If the cert_data matches a value in the known
+certificates object, then the sender replaces the cert_data with the
+corresponding key.  Decompression works the opposite way, replacing keys with
+values.
 
-[[ TODO ]]
-
+Note that in this scheme, there is no signaling on the wire for whether a given
+cert_data value is compressed or uncompressed.  Known certificates objects
+should be constructed in such a way as to avoid a uncompressed object being
+mistaken for compressed one and erroneously decompressed.  For X.509, it is
+sufficient for the first byte of the compressed value (key) to have a value
+other than 0x30, since every X.509 certificate starts with this byte.
 
 # Examples
 
