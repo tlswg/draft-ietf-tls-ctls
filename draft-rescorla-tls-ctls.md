@@ -455,7 +455,8 @@ Finished value is filled in by the receiving side.
 the native hash and TLS 1.2 used 12 bytes. More analysis is needed
 to know the minimum safe Finished size (this partly depends on
 how strong guarantees we want to be able to make about the TLS
-handshake without examining the record encryption).]]
+handshake without examining the record encryption). See
+{{RFC8446}}; Section E.1 for more on this.]]
 
 ### Requirements on the TLS Implementation
 
