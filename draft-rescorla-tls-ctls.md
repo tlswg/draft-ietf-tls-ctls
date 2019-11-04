@@ -183,7 +183,7 @@ length coded:
 
 ~~~~
     struct {
-        ExtensionType extension_type;
+        varint extension_type;
         opaque extension_data<0..V>;
     } Extension;
 ~~~~
@@ -210,20 +210,6 @@ The cTLS ClientHello is as follows.
       } ClientHello;
 ~~~~
 
-
-## ServerHello
-
-We redefine ServerHello in a similar way:
-
-~~~~
-      struct {
-          Random random;
-          CipherSuite cipher_suite;
-          Extension extensions<1..V>;
-      } ServerHello;
-~~~~
-
-
 ### KeyShare, SupportedGroups, and SignatureAlgorithms
 
 
@@ -242,25 +228,42 @@ of integers.
 [[OPEN ISSUE: Limiting this to one value would potentially
 save some bytes here, at the cost of generality.]]
 
+
+## ServerHello
+
+We redefine ServerHello in a similar way:
+
+~~~~
+      struct {
+          Random random;
+          CipherSuite cipher_suite;
+          Extension extensions<1..V>;
+      } ServerHello;
+~~~~
+
 ## EncryptedExtensions
 
-Unchanged.
+Likewise, EncryptedExtensions now uses a varint length field.
+
+~~~~
+      struct {
+          Extension extensions<0..V>;
+      } EncryptedExtensions;
+~~~~      
 
 [[OPEN ISSUE: We could save 2 bytes in handshake header by
 omitting this value when it's unneeded.]]
 
 ## CertificateRequest
 
-This message removes the certificate_request_context and
-re-encodes the extensions.
+This message uses varint lengths and re-encodes the extensions.
 
 ~~~~
       struct {
+          opaque certificate_request_context<0..V>
           Extension extensions<1..V>;
       } CertificateRequest;
 ~~~~
-
-
 
 ## Certificate
 
@@ -286,34 +289,37 @@ We can slim down the Certficate message somewhat.
       } CertificateEntry;
 
       struct {
-          CertificateEntry certificate_list[rest of extension];
+          opaque certificate_request_context<0..V>
+          CertificateEntry certificate_list<1..V>;
       } Certificate;
 ~~~~
 
-### CertificateVerify
+## CertificateVerify
 
 This just removes the length field.
 ~~~~
       struct {
           SignatureScheme algorithm; // TODO -- define one byte schemes.
-          opaque signature[rest of message];
+          opaque signature<1..V>;
       } CertificateVerify;
 ~~~~
 
-### Finished
+## Finished
 
 Unchanged.
 
-### HelloRetryRequest
+## HelloRetryRequest
 
 The HelloRetryRequest has the following format:
 
 ~~~~
       struct {
           CipherSuite cipher_suite;
-          Extension extensions<2..2^16-1>;
+          Extension extensions<2..V>;
       } HelloRetryRequest;
 ~~~~
+
+It is the same as the ServerHello above but without the unused Random value.
 
 # Template-Based Specialization
 
