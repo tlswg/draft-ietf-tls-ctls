@@ -333,8 +333,7 @@ supported_versions extension can be omitted.
 Importantly, this process is performed only for the wire encoding but
 not for the handshake transcript.  The result is that the transcript for a
 specialized cTLS handshake is the same as the transcript for a TLS 1.3 handshake
-with the same features used. [[OPEN ISSUE: Except possibly inserting sme
-extension indicating the use of cTLS.]]
+with the same features used.
 
 One way of thinking of this is as if specialization is a stateful compression
 layer between the handshake and the record layer:
@@ -560,16 +559,16 @@ Version 772 corresponds to the hex representation 0x0304, named group "29"
 
 WARNING: This document is effectively brand new and has seen no
 analysis. The idea here is that cTLS is isomorphic to TLS 1.3, and
-therefore should provide equivalent security guarantees, modulo use of
-new features such as KeyID certificate messages.
+therefore should provide equivalent security guarantees.
 
-One piece that is a new TLS 1.3 feature is the addition of compressed
-certificates dictionary, Which definitely requires some analysis, especially as it looks like
-a potential source of identity misbinding. This is entirely separable
-from the rest of the specification. Transcript expansion also needs
-some analysis and we need to determine whether we need an extension
-to indicate that cTLS is in use and with which profile.
+The use of key ids is a new feature introduced in this document, which 
+requires some analysis, especially as it looks like a potential source 
+of identity misbinding. This is, however, entirely separable
+from the rest of the specification. 
 
+Transcript expansion also needs some analysis and we need to determine 
+whether we need an extension to indicate that cTLS is in use and with 
+which profile.
 
 # IANA Considerations
 
