@@ -245,11 +245,6 @@ We redefine ServerHello in a similar way:
       } ServerHello;
 ~~~~
 
-The extensions have the same default values as in ClientHello,
-so as a practical matter only KeyShare, SupportedGroups, and
-SupportedVersions are needed.
-
-
 ### KeyShare
 
 In cTLS the client only provides a single key share to the server,
@@ -343,11 +338,6 @@ We can slim down the Certficate message somewhat.
           CertificateEntry certificate_list[rest of extension];
       } Certificate;
 ~~~~
-
-For a single certificate, this message will have a minumum of 2 bytes of
-overhead for the two length bytes.
-
-[[OPEN ISSUE: What should the default type be?]]
 
 ### CertificateVerify
 
