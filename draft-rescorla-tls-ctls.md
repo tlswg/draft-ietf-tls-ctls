@@ -69,8 +69,9 @@ is achieved by four basic techniques:
   valuses.
 
 For the common (EC)DHE handshake with pre-established certificates, cTLS
-achieves an overhead of [TODO] bytes over the minimum required by the
-cryptovariables.
+achieves an overhead of 45 bytes over the minimum required by the
+cryptovariables.  For a PSK handshake, the overhead is 21 bytes.  Annotated
+handsdhake transcripts for these cases can be found in {{transcripts}}.
 
 Because cTLS is semantically equivalent to TLS, it can be viewed either
 as a related protocol or as a compression mechanism. Specifically, it
@@ -583,6 +584,178 @@ This document has no IANA actions.
 
 
 --- back
+
+# Sample Transcripts
+
+In this section, we provide annotated example transcripts generated using a
+draft implementation of this specification in the mint TLS library.  The
+transcripts shown are with the revised message formats defined above, as well as
+specialization to the indicated cases, using the aggressive compression profiles
+noted below.  The resulting byte counts are as follows:
+
+~~~~~
+                     ECDHE                PSK
+              ------------------  ------------------
+              TLS  CTLS  Overhead  TLS  CTLS  Overhead
+              ---  ----  --------  ---  ----  --------
+ClientHello   132   50      10     147   67      15
+ServerHello    90   48       8      56   18       2
+ServerFlight  478  104      16      42   12       3
+ClientFlight  458  100      11      36   10       1
+=====================================================
+Total        1158  302      45     280  107      21
+~~~~~
+
+To increase legibility, we show the plaintext bytes of handshake messages that
+would be encrypted and shorten some of the cryptographic values (shown with
+"...").  The totals above include 9 bytes of encryption overhead for the
+client and server flights, which would otherwise be encrypted (with a one-byte
+content type and an 8-byte tag).
+
+Obviously, these figures are very provisional, and as noted at several points
+above, there are additional opportunities to reduce overhead.
+
+## ECDHE and Mutual Certificate-based Authentication
+
+Compression Profile:
+
+~~~~~
+{
+  "version": 772,
+  "cipherSuite": "TLS_AES_128_CCM_8_SHA256",
+  "dhGroup": "X25519",
+  "signatureAlgorithm": "ECDSA_P256_SHA256",
+  "randomSize": 8,
+  "finishedSize": 8,
+  "clientHelloExtensions": {
+    "server_name": "000e00000b6578616d706c652e636f6d",
+  },
+  "certificateRequestExtensions": {
+    "signature_algorithms": "00020403"
+  },
+  "knownCertificates": {
+    "61": "3082...",
+    "62": "3082..."
+  }
+}
+~~~~~
+
+ClientHello: 50 bytes = RANDOM(8) + DH(32) + Overhead(10)
+
+~~~
+01                    // ClientHello
+2ef16120dd84a721      // Random
+28                    // Extensions.length
+33 26                 // KeyShare
+  0024                // client_shares.length
+    001d              // KeyShareEntry.group
+    0020 a690...af948 // KeyShareEntry.key_exchange            
+~~~
+
+ServerHello: 48 = RANDOM(8) + DH(32) + Overhead(8)
+
+~~~
+02                 // ServerHello
+962547bba5e00973   // Random
+26                 // Extensions.length
+33 24              // KeyShare
+  001d             // KeyShareEntry.group
+  0020 9fbc...0f49 // KeyShareEntry.key_exchange
+~~~
+
+Server Flight: 96 = SIG(71) + MAC(8) + CERTID(1) + Overhead(16)
+
+~~~
+08                 // EncryptedExtensions
+  00               //   Extensions.length
+0d                 // CertificateRequest
+  00               //   CertificateRequestContext.length
+  00               //   Extensions.length
+0b                 // Certificate
+  00               //   CertificateRequestContext 
+  03               //   CertificateList 
+    01             //     CertData.length
+      61           //       CertData = 'a'
+    00             //   Extensions.length
+0f                 // CertificateVerify
+  0403             //   SignatureAlgorithm
+  4047 3045...10ce //   Signature
+14                 // Finished
+  bfc9d66715bb2b04 //   VerifyData
+~~~
+
+Client Flight: 91 bytes = SIG(71) + MAC(8) + CERTID(1) + Overhead(11)
+
+~~~
+0b                 // Certificate
+  00               //   CertificateRequestContext 
+  03               //   CertificateList 
+    01             //     CertData.length
+      62           //       CertData = 'b'
+    00             //     Extensions.length
+0f                 // CertificateVerify
+  0403             //   SignatureAlgorithm
+  4047 3045...f60e //   Signature.length  
+14                 // Finished
+  35e9c34eec2c5dc1 //   VerifyData
+~~~
+
+## PSK
+
+Compression Profile:
+
+~~~~~
+{
+  "version": 772,
+  "cipherSuite": "TLS_AES_128_CCM_8_SHA256",
+  "signatureAlgorithm": "ECDSA_P256_SHA256",
+  "randomSize": 16,
+  "finishedSize": 0,
+  "clientHelloExtensions": {
+    "server_name": "000e00000b6578616d706c652e636f6d",
+    "psk_key_exchange_modes": "0100"
+  },
+  "serverHelloExtensions": {
+    "pre_shared_key": "0000"
+  }
+}
+~~~~~
+
+ClientHello: 67 bytes = RANDOM(16) + PSKID(4) + BINDER(32) + Overhead(15)
+
+~~~
+01                               // ClientHello
+e230115e62d9a3b58f73e0f2896b2e35 // Random
+2d                               // Extensions.length
+29 2b                            // PreSharedKey
+    000a                         //   identities.length
+      0004 00010203              //     identity
+      7bd05af6                   //     obfuscated_ticket_age
+    0021                         //   binders.length
+      20 2428...bb3f             //     binder               
+~~~
+
+ServerHello: 18 bytes = RANDOM(16) + 2
+
+~~~
+02                                // ServerHello
+7232e2d3e61e476b844d9c1f6a4c868f  // Random
+00                                // Extensions.length
+~~~
+
+Server Flight: 3 bytes = Overhead(3)
+
+~~~
+08    // EncryptedExtensions
+  00  //   Extensions.length
+14    // Finished
+~~~
+
+Client Flight: 1 byte = Overhead(3)
+
+~~~
+14    // Finished
+~~~
 
 # Acknowledgments
 {:numbered="false"}
