@@ -163,7 +163,6 @@ layer except that the length is a varint.
 ~~~~
       struct {
           HandshakeType msg_type;    /* handshake type */
-          varint length;             // CHANGED
           select (Handshake.msg_type) {
               case client_hello:          ClientHello;
               case server_hello:          ServerHello;
@@ -221,7 +220,7 @@ The cTLS ClientHello is as follows.
           ProtocolVersion versions<0..255>;
           Random random;
           CipherSuite cipher_suites<1..V>;
-          Extension extensions[remainder_of_message];
+          Extension extensions<1..V>;
       } ClientHello;
 ~~~~
 
@@ -261,7 +260,7 @@ We redefine ServerHello in a similar way:
           ProtocolVersion version;
           Random random;
           CipherSuite cipher_suite;
-          Extension extensions[remainder_of_message];
+          Extension extensions<1..V>;
       } ServerHello;
 ~~~~
 
@@ -318,8 +317,8 @@ TLS Supported Groups registry provides this information.
 
 ### PreSharedKeys
 
-[[TODO]]
-
+[[OPEN ISSUE: Limiting this to one value would potentially
+save some bytes here, at the cost of generality.]]
 
 ## EncryptedExtensions
 
@@ -335,7 +334,7 @@ re-encodes the extensions.
 
 ~~~~
       struct {
-          Extension extensions[remainder of message];
+          Extension extensions<1..V>;
       } CertificateRequest;
 ~~~~
 
@@ -390,7 +389,7 @@ Unchanged.
 
 ### HelloRetryRequest
 
-The HelloRetryRequest has the following format: 
+The HelloRetryRequest has the following format:
 
 ~~~~
       struct {
