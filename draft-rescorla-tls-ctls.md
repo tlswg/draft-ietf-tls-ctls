@@ -222,25 +222,25 @@ The cTLS ClientHello is as follows.
       } ClientHello;
 ~~~~
 
-The mapping for TLS 1.3 ciphersuites to their 1 byte equivalent is 	
-defined as the low-order byte of the existing TLS 1.3 IANA 	
-ciphersuite registry values. 	
+The mapping for TLS 1.3 ciphersuites to their 1 byte equivalent is
+defined as the low-order byte of the existing TLS 1.3 IANA
+ciphersuite registry values.
 
 ~~~~
-+------------------------------+-------------+--------+	
-| Ciphersuite                  | TLS 1.3 IANA| cTLS   |	
-|                              |   Value     |Mapping |	
-+------------------------------+-------------+--------+	
-| TLS_AES_128_GCM_SHA256       | {0x13,0x01} | 0x01   |	
-|                              |             |        |	
-| TLS_AES_256_GCM_SHA384       | {0x13,0x02} | 0x02   |	
-|                              |             |        |	
-| TLS_CHACHA20_POLY1305_SHA256 | {0x13,0x03} | 0x03   |	
-|                              |             |        |	
-| TLS_AES_128_CCM_SHA256       | {0x13,0x04} | 0x04   |	
-|                              |             |        |	
-| TLS_AES_128_CCM_8_SHA256     | {0x13,0x05} | 0x05   |	
-+------------------------------+-------------+--------+             	
++------------------------------+-------------+--------+
+| Ciphersuite                  | TLS 1.3 IANA| cTLS   |
+|                              |   Value     |Mapping |
++------------------------------+-------------+--------+
+| TLS_AES_128_GCM_SHA256       | {0x13,0x01} | 0x01   |
+|                              |             |        |
+| TLS_AES_256_GCM_SHA384       | {0x13,0x02} | 0x02   |
+|                              |             |        |
+| TLS_CHACHA20_POLY1305_SHA256 | {0x13,0x03} | 0x03   |
+|                              |             |        |
+| TLS_AES_128_CCM_SHA256       | {0x13,0x04} | 0x04   |
+|                              |             |        |
+| TLS_AES_128_CCM_8_SHA256     | {0x13,0x05} | 0x05   |
++------------------------------+-------------+--------+
 ~~~~
 
 The versions list from "supported_versions" has moved into
@@ -274,9 +274,9 @@ Overhead: 6 bytes
 
 ### KeyShare
 
-In cTLS the client only provides a single key share to the server, 
-which represents reduced functionality compared to TLS 1.3 where the 
-client can send a number of key shares. 
+In cTLS the client only provides a single key share to the server,
+which represents reduced functionality compared to TLS 1.3 where the
+client can send a number of key shares.
 
 The KeyShareClientHello extension is defined as follows:
 
@@ -295,8 +295,8 @@ The KeyShareServerHello extension is defined as follows:
 ~~~~
 
 This specification defines a mapping of the named groups
-defined in TLS 1.3. An extra column in the IANA mantained 
-TLS Supported Groups registry provides this information. 
+defined in TLS 1.3. An extra column in the IANA mantained
+TLS Supported Groups registry provides this information.
 
 +------------------------------+-------------+--------+
 | Elliptic Curve Groups (ECDHE)| Current IANA| cTLS   |
@@ -477,7 +477,7 @@ consisting solely of this group.
 signatureAlgorithm (string):
 : specifies a single signature scheme to use for authentication. The
 group is listed by the code point name in {{RFC8446}}, Section 4.2.7.
-(e.g., x25519). This implies a literal "signature_algorithms" extension
+(e.g., ed25519). This implies a literal "signature_algorithms" extension
 consisting solely of this group.
 
 randomSize (integer):
@@ -625,7 +625,7 @@ and everything else is ordinary TLS 1.3.
     }
 }
 
-Version 772 corresponds to the hex representation 0x0304, named group "29" 
+Version 772 corresponds to the hex representation 0x0304, named group "29"
 (0x001D) represents X25519.
 
 # Security Considerations
