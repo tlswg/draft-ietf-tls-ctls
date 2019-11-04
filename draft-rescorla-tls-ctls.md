@@ -255,19 +255,45 @@ Overhead: 6 bytes
 
 
 ### KeyShare
+
+In cTLS the client only provides a single key share to the server, 
+which represents reduced functionality compared to TLS 1.3 where the 
+client can send a number of key shares. 
+
+The KeyShareClientHello extension is defined as follows:
+
+~~~~
+      struct {
+          KeyShareEntry client_shares;
+      } KeyShareClientHello;
+~~~~
+
+The KeyShareServerHello extension is defined as follows:
+
 ~~~~
       struct {
           KeyShareEntry server_share;
       } KeyShareServerHello;
 ~~~~
 
-[[OPEN ISSUE: We could save one byte here by removing the length
-of the key share and another byte by only allowing the client
-to send one key share (so group wasn't needed)..]]
+This specification defines a mapping of the named groups
+defined in TLS 1.3. An extra column in the IANA mantained 
+TLS Supported Groups registry provides this information. 
 
-
-[[TODO: Need to define a single-byte list of NamedGroups]].
-
++------------------------------+-------------+--------+
+| Elliptic Curve Groups (ECDHE)| Current IANA| cTLS   |
+|                              |   Value     |Mapping |
++------------------------------+-------------+--------+
+| secp256r1                    | 0x0017      | 0x01   |
+|                              |             |        |
+| secp384r1                    | 0x0018      | 0x02   |
+|                              |             |        |
+| secp521r1                    | 0x0019      | 0x03   |
+|                              |             |        |
+| x25519                       | 0x001D      | 0x04   |
+|                              |             |        |
+| x448                         | 0x001E      | 0x05   |
++------------------------------+-------------+--------+
 
 ### PreSharedKeys
 
@@ -553,4 +579,4 @@ This document has no IANA actions.
 # Acknowledgments
 {:numbered="false"}
 
-We would like to thank Karthikeyan Bhargavan, Owen Friel, Sean Turner, and Chris Wood.
+We would like to thank Karthikeyan Bhargavan, Owen Friel, Sean Turner, Martin Thomson and Chris Wood.
