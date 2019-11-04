@@ -591,7 +591,7 @@ values.
 
 Note that in this scheme, there is no signaling on the wire for whether a given
 cert_data value is compressed or uncompressed.  Known certificates objects
-should be constructed in such a way as to avoid a uncompressed object being
+SHOULD be constructed in such a way as to avoid a uncompressed object being
 mistaken for compressed one and erroneously decompressed.  For X.509, it is
 sufficient for the first byte of the compressed value (key) to have a value
 other than 0x30, since every X.509 certificate starts with this byte.
