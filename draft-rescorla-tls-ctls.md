@@ -635,11 +635,12 @@ analysis. The idea here is that cTLS is isomorphic to TLS 1.3, and
 therefore should provide equivalent security guarantees, modulo use of
 new features such as KeyID certificate messages.
 
-One piece that is a new TLS 1.3 feature is the addition of the key_id,
-which definitely requires some analysis, especially as it looks like
+One piece that is a new TLS 1.3 feature is the addition of compressed
+certificates dictionary, Which definitely requires some analysis, especially as it looks like
 a potential source of identity misbinding. This is entirely separable
-from the rest of the specification. The compression version would also
-need further analysis.
+from the rest of the specification. Transcript expansion also needs
+some analysis and we need to determine whether we need an extension
+to indicate that cTLS is in use and with which profile.
 
 
 # IANA Considerations
