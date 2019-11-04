@@ -576,6 +576,8 @@ and everything else is ordinary TLS 1.3.
 Version 772 corresponds to the hex representation 0x0304, named group "29"
 (0x001D) represents X25519.
 
+[[OPEN ISSUE: Should we have a registry of well-known profiles?]]
+
 # Security Considerations
 
 WARNING: This document is effectively brand new and has seen no
