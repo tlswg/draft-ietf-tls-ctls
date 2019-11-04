@@ -451,7 +451,11 @@ finishedSize (integer):
 : indicates that the Finished value is to be truncated to the given
 length. When the transcript is reconstructed, the remainder of the
 Finished value is filled in by the receiving side.
-[[OPEN ISSUE: How short should we allow this to be?]]
+[[OPEN ISSUE: How short should we allow this to be? TLS 1.3 uses
+the native hash and TLS 1.2 used 12 bytes. More analysis is needed
+to know the minimum safe Finished size (this partly depends on
+how strong guarantees we want to be able to make about the TLS
+handshake without examining the record encryption).]]
 
 ### Requirements on the TLS Implementation
 
@@ -602,7 +606,7 @@ This document has no IANA actions.
 
 --- back
 
-# Sample Transcripts
+# Sample Transcripts {#transcripts}
 
 In this section, we provide annotated example transcripts generated using a
 draft implementation of this specification in the mint TLS library.  The
@@ -631,6 +635,10 @@ content type and an 8-byte tag).
 
 Obviously, these figures are very provisional, and as noted at several points
 above, there are additional opportunities to reduce overhead.
+
+NOTE: We are using a shortened Finished message here. See
+{{specifying-a-specialization}} for notes on Finished size. However, the overhead is constant
+for all reasonable Finished sizes.]]
 
 ## ECDHE and Mutual Certificate-based Authentication
 
@@ -666,7 +674,7 @@ ClientHello: 50 bytes = RANDOM(8) + DH(32) + Overhead(10)
 33 26                 // KeyShare
   0024                // client_shares.length
     001d              // KeyShareEntry.group
-    0020 a690...af948 // KeyShareEntry.key_exchange            
+    0020 a690...af948 // KeyShareEntry.key_exchange
 ~~~
 
 ServerHello: 48 = RANDOM(8) + DH(32) + Overhead(8)
@@ -689,8 +697,8 @@ Server Flight: 96 = SIG(71) + MAC(8) + CERTID(1) + Overhead(16)
   00               //   CertificateRequestContext.length
   00               //   Extensions.length
 0b                 // Certificate
-  00               //   CertificateRequestContext 
-  03               //   CertificateList 
+  00               //   CertificateRequestContext
+  03               //   CertificateList
     01             //     CertData.length
       61           //       CertData = 'a'
     00             //   Extensions.length
@@ -705,14 +713,14 @@ Client Flight: 91 bytes = SIG(71) + MAC(8) + CERTID(1) + Overhead(11)
 
 ~~~
 0b                 // Certificate
-  00               //   CertificateRequestContext 
-  03               //   CertificateList 
+  00               //   CertificateRequestContext
+  03               //   CertificateList
     01             //     CertData.length
       62           //       CertData = 'b'
     00             //     Extensions.length
 0f                 // CertificateVerify
   0403             //   SignatureAlgorithm
-  4047 3045...f60e //   Signature.length  
+  4047 3045...f60e //   Signature.length
 14                 // Finished
   35e9c34eec2c5dc1 //   VerifyData
 ~~~
@@ -749,7 +757,7 @@ e230115e62d9a3b58f73e0f2896b2e35 // Random
       0004 00010203              //     identity
       7bd05af6                   //     obfuscated_ticket_age
     0021                         //   binders.length
-      20 2428...bb3f             //     binder               
+      20 2428...bb3f             //     binder
 ~~~
 
 ServerHello: 18 bytes = RANDOM(16) + 2
