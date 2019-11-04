@@ -112,9 +112,6 @@ a vector with a top range of a varint is denoted as:
 With a few exceptions, cTLS replaces every integer in TLS
 with a varint.
 
-[[OPEN ISSUE: Should we just re-encode this directly in CBOR?.
-That might be easier for people, but I ran out of time.]]
-
 ## Record Layer
 
 The cTLS Record Layer assumes that records are externally framed
