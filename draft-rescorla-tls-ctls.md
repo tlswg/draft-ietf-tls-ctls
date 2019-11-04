@@ -202,34 +202,12 @@ The cTLS ClientHello is as follows.
 
 ~~~~
       opaque Random[RandomLength];      // variable length
-      uint8 CipherSuite;                // 1 byte
 
       struct {
           Random random;
           CipherSuite cipher_suites<1..V>;
           Extension extensions<1..V>;
       } ClientHello;
-~~~~
-
-The mapping for TLS 1.3 ciphersuites to their 1 byte equivalent is
-defined as the low-order byte of the existing TLS 1.3 IANA
-ciphersuite registry values.
-
-~~~~
-+------------------------------+-------------+--------+
-| Ciphersuite                  | TLS 1.3 IANA| cTLS   |
-|                              |   Value     |Mapping |
-+------------------------------+-------------+--------+
-| TLS_AES_128_GCM_SHA256       | {0x13,0x01} | 0x01   |
-|                              |             |        |
-| TLS_AES_256_GCM_SHA384       | {0x13,0x02} | 0x02   |
-|                              |             |        |
-| TLS_CHACHA20_POLY1305_SHA256 | {0x13,0x03} | 0x03   |
-|                              |             |        |
-| TLS_AES_128_CCM_SHA256       | {0x13,0x04} | 0x04   |
-|                              |             |        |
-| TLS_AES_128_CCM_8_SHA256     | {0x13,0x05} | 0x05   |
-+------------------------------+-------------+--------+
 ~~~~
 
 
@@ -245,48 +223,21 @@ We redefine ServerHello in a similar way:
       } ServerHello;
 ~~~~
 
-### KeyShare
 
-In cTLS the client only provides a single key share to the server,
-which represents reduced functionality compared to TLS 1.3 where the
-client can send a number of key shares.
+### KeyShare, SupportedGroups, and SignatureAlgorithms
 
-The KeyShareClientHello extension is defined as follows:
 
-~~~~
-      struct {
-          KeyShareEntry client_shares;
-      } KeyShareClientHello;
-~~~~
+KeyShare, SupportedGroups, and SignatureAlgorithms are identical to in
+TLS 1.3, except for the use of varints instead of integers. Note that
+because all of the EC DH groups are below 0x80, they will fit into a
+single byte. This is not true for signature algorithms.
 
-The KeyShareServerHello extension is defined as follows:
-
-~~~~
-      struct {
-          KeyShareEntry server_share;
-      } KeyShareServerHello;
-~~~~
-
-This specification defines a mapping of the named groups
-defined in TLS 1.3. An extra column in the IANA mantained
-TLS Supported Groups registry provides this information.
-
-+------------------------------+-------------+--------+
-| Elliptic Curve Groups (ECDHE)| Current IANA| cTLS   |
-|                              |   Value     |Mapping |
-+------------------------------+-------------+--------+
-| secp256r1                    | 0x0017      | 0x01   |
-|                              |             |        |
-| secp384r1                    | 0x0018      | 0x02   |
-|                              |             |        |
-| secp521r1                    | 0x0019      | 0x03   |
-|                              |             |        |
-| x25519                       | 0x001D      | 0x04   |
-|                              |             |        |
-| x448                         | 0x001E      | 0x05   |
-+------------------------------+-------------+--------+
+[[OPEN ISSUE: Should we map signature algorithms into a smaller space?]]
 
 ### PreSharedKeys
+
+PreSharedKeys is the same as in TLS 1.3, except for the use of varints instead
+of integers.
 
 [[OPEN ISSUE: Limiting this to one value would potentially
 save some bytes here, at the cost of generality.]]
