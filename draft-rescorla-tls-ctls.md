@@ -223,12 +223,9 @@ We redefine ServerHello in a similar way:
       } ServerHello;
 ~~~~
 
-The extensions have the same default values as in ClientHello,
-so as a practical matter only KeyShare, SupportedGroups, and
-SupportedVersions are needed.
-
 
 ### KeyShare, SupportedGroups, and SignatureAlgorithms
+
 
 KeyShare, SupportedGroups, and SignatureAlgorithms are identical to in
 TLS 1.3, except for the use of varints instead of integers. Note that
@@ -292,11 +289,6 @@ We can slim down the Certficate message somewhat.
           CertificateEntry certificate_list[rest of extension];
       } Certificate;
 ~~~~
-
-For a single certificate, this message will have a minumum of 2 bytes of
-overhead for the two length bytes.
-
-[[OPEN ISSUE: What should the default type be?]]
 
 ### CertificateVerify
 
