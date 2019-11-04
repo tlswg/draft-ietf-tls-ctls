@@ -188,7 +188,6 @@ length coded:
     } Extension;
 ~~~~
 
-
 # Handshake Messages
 
 In general, we retain the basic structure of each individual
@@ -249,7 +248,7 @@ Likewise, EncryptedExtensions now uses a varint length field.
       struct {
           Extension extensions<0..V>;
       } EncryptedExtensions;
-~~~~      
+~~~~
 
 [[OPEN ISSUE: We could save 2 bytes in handshake header by
 omitting this value when it's unneeded.]]
@@ -358,6 +357,12 @@ Specializations are defined by a "compression profile" that specifies what
 features are to be optimized out of the handshake.  In the following
 subsections, we define the structure of these profiles, and how they are used in
 compressing and decompressing handshake messages.
+
+[[OPEN ISSUE: Do we want to have an explicit cTLS extension
+indicating that cTLS is in use and which specialization is in
+use? This goes back to whether we want the use of cTLS to
+be explicit.]]
+
 
 ## Specifying a Specialization
 
@@ -567,13 +572,13 @@ WARNING: This document is effectively brand new and has seen no
 analysis. The idea here is that cTLS is isomorphic to TLS 1.3, and
 therefore should provide equivalent security guarantees.
 
-The use of key ids is a new feature introduced in this document, which 
-requires some analysis, especially as it looks like a potential source 
+The use of key ids is a new feature introduced in this document, which
+requires some analysis, especially as it looks like a potential source
 of identity misbinding. This is, however, entirely separable
-from the rest of the specification. 
+from the rest of the specification.
 
-Transcript expansion also needs some analysis and we need to determine 
-whether we need an extension to indicate that cTLS is in use and with 
+Transcript expansion also needs some analysis and we need to determine
+whether we need an extension to indicate that cTLS is in use and with
 which profile.
 
 # IANA Considerations
