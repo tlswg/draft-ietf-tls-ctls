@@ -121,24 +121,12 @@ with a varint.
 
 ## Record Layer
 
-The cTLS Record Layer assumes that records are externally framed
-(i.e., that the length is already known because it is carried in a UDP
-datagram or the like). Depending on how this was carried, you might
-need another byte or two for that framing. Thus, only the type byte
-need be carried and TLSPlaintext becomes:
+For encrypted records, cTLS uses a minimal framing on the wire that only
+specifies the length of the record.  The content of encrypted records is the
+same as for TLS; in particular, it carries a content type for the encrypted
+content.
 
-~~~~
-      struct {
-          ContentType type;
-          opaque fragment[TLSPlaintext.length];
-      } TLSPlaintext;
-~~~~
-
-In addition, because the epoch is known in advance, the
-dummy content type is not needed for the ciphertext, so
-TLSCiphertext becomes:
-
-~~~~
+~~~~~
       struct {
           opaque content[TLSPlaintext.length];
           ContentType type;
@@ -146,13 +134,25 @@ TLSCiphertext becomes:
       } TLSInnerPlaintext;
 
       struct {
-          opaque encrypted_record[TLSCiphertext.length];
+          opaque encrypted_record<0..V>;
       } TLSCiphertext;
-~~~~
+~~~~~
 
-Note: The user is responsible for ensuring that the sequence
-numbers/nonces are handled in the usual fashion.
+If cTLS is embedded in an external protocol where records are already delimited,
+then the varint ciphertext length may be omitted.
 
+The only records sent in plaintext in cTLS are the ClientHello and ServerHello
+records, which comprise the first bytes of the client-to-server and
+server-to-client streams, respectively.  Since these messages are both
+self-describing, there is no need to signal the length or content type of the
+first record.
+
+In other words, the overall structure of a CTLS session is as follows:
+
+~~~~~
+      C->S: ClientHello, TLSCiphertext, TLSCiphertext, ...
+      S->C: ServerHello, TLSCiphertext, TLSCiphertext, ...
+~~~~~
 
 ## Handshake Layer
 
