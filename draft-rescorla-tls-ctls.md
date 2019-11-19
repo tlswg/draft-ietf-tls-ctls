@@ -121,38 +121,49 @@ with a varint.
 
 ## Record Layer
 
-The cTLS Record Layer assumes that records are externally framed
-(i.e., that the length is already known because it is carried in a UDP
-datagram or the like). Depending on how this was carried, you might
-need another byte or two for that framing. Thus, only the type byte
-need be carried and TLSPlaintext becomes:
+The only cTLS records that are sent in plaintext are handshake records, so the
+only thing that needs to be signaled for unencrypted records is the length of
+the record.  (In principle, even this length could be omitted, since handshake
+messages are self-describing.  Having this length field allows a clean
+separation between the record layer and the handshake layer.)  
 
 ~~~~
       struct {
-          ContentType type;
-          opaque fragment[TLSPlaintext.length];
+          opaque fragment<0..V>;
       } TLSPlaintext;
 ~~~~
 
-In addition, because the epoch is known in advance, the
-dummy content type is not needed for the ciphertext, so
-TLSCiphertext becomes:
+Encrypted records use the DTLS 1.3 record framing, including optional connection
+IDs.
 
 ~~~~
-      struct {
-          opaque content[TLSPlaintext.length];
-          ContentType type;
-          uint8 zeros[length_of_padding];
-      } TLSInnerPlaintext;
+      0 1 2 3 4 5 6 7
+      +-+-+-+-+-+-+-+-+
+      |0|0|1|C|S|L|E E|
+      +-+-+-+-+-+-+-+-+
+      | Connection ID |   Legend:
+      | (if any,      |
+      /  length as    /   C   - Connection ID (CID) present
+      |  negotiated)  |   S   - Sequence number length
+      +-+-+-+-+-+-+-+-+   L   - Length present
+      |  8 or 16 bit  |   E   - Epoch
+      |Sequence Number|
+      +-+-+-+-+-+-+-+-+
+      | 16 bit Length |
+      | (if present)  |
+      +-+-+-+-+-+-+-+-+
 
       struct {
-          opaque encrypted_record[TLSCiphertext.length];
-      } TLSCiphertext;
+          opaque unified_hdr[variable];
+          opaque encrypted_record[length];
+      } DTLSCiphertext;
 ~~~~
 
-Note: The user is responsible for ensuring that the sequence
-numbers/nonces are handled in the usual fashion.
-
+As with DTLS, the length field MAY be omitted by clearing the L bit, which means
+that the record consumes the entire rest of the data in the lower level
+transport.  In this case it is not possible to have multiple DTLSCiphertext
+format records without length fields in the same datagram.  In stream-oriented
+transports (e.g., TCP), the length field MUST be present.
 
 ## Handshake Layer
 
