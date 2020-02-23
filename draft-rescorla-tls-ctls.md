@@ -66,12 +66,12 @@ is achieved by four basic techniques:
 - More compact encodings, omitting unnecessary values.
 - A template-based specialization mechanism that allows for the creation
   of application specific versions of TLS that omit unnecessary
-  valuses.
+  values.
 
 For the common (EC)DHE handshake with pre-established certificates, cTLS
 achieves an overhead of 45 bytes over the minimum required by the
 cryptovariables.  For a PSK handshake, the overhead is 21 bytes.  Annotated
-handsdhake transcripts for these cases can be found in {{transcripts}}.
+handshake transcripts for these cases can be found in {{transcripts}}.
 
 Because cTLS is semantically equivalent to TLS, it can be viewed either
 as a related protocol or as a compression mechanism. Specifically, it
@@ -272,7 +272,7 @@ This message uses varint lengths and re-encodes the extensions.
 
 ## Certificate
 
-We can slim down the Certficate message somewhat.
+We can slim down the Certificate message somewhat.
 
 ~~~~
       enum {
@@ -525,7 +525,7 @@ to avoid this overhead when the parties to a handshake have already exchanged
 certificates, a compression profile can specify a dictionary of "known
 certificates" that effectively acts as a compression dictionary on certificates.
 
-A known certicates object is a JSON dictionary whose keys are strings containing
+A known certificates object is a JSON dictionary whose keys are strings containing
 hex-encoded compressed values.  The corresponding values are hex-encoded strings
 representing the uncompressed values.  For example:
 
@@ -636,7 +636,7 @@ content type and an 8-byte tag).
 Obviously, these figures are very provisional, and as noted at several points
 above, there are additional opportunities to reduce overhead.
 
-NOTE: We are using a shortened Finished message here. See
+[[NOTE: We are using a shortened Finished message here. See
 {{specifying-a-specialization}} for notes on Finished size. However, the overhead is constant
 for all reasonable Finished sizes.]]
 
