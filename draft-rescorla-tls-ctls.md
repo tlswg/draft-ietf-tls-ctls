@@ -116,7 +116,7 @@ a vector with a top range of a varint is denoted as:
      opaque foo<1..V>;
 ~~~~~
 
-In cTLS replaces all the integers in TLS (including code points) with
+cTLS replaces all the integers in TLS (including code points) with
 varints; we do not show the structures which only change in this way.
 
 
