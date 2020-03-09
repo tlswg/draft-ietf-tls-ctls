@@ -121,11 +121,13 @@ with a varint.
 
 ## Record Layer
 
-The only cTLS records that are sent in plaintext are handshake records, so the
-only thing that needs to be signaled for unencrypted records is the length of
-the record.  (In principle, even this length could be omitted, since handshake
-messages are self-describing.  Having this length field allows a clean
-separation between the record layer and the handshake layer.)  
+The only cTLS records that are sent in plaintext are handshake records
+(ClientHello, and ServerHello/HRR). The content type is therefore constant (it
+is always `handshake`) and does not need to be explicitly conveyed in the record
+layer. Length information is signaled for unencrypted records using the varint
+encoding. (In principle, even this length could be omitted, since handshake
+messages are self-describing. Having this length field allows a clean separation
+between the record layer and the handshake layer.)
 
 ~~~~
       struct {
