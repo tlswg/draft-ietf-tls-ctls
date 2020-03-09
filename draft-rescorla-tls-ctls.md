@@ -116,8 +116,36 @@ a vector with a top range of a varint is denoted as:
      opaque foo<1..V>;
 ~~~~~
 
-In cTLS replaces all the integers in TLS (including code points) with
-varints; we do not show the structures which only change in this way.
+cTLS replaces all integers in TLS with varints, including:
+
+* Values of uint8, uint16, uint24, uint32, and uint64
+* Vector length prefixes
+* Enum / code point values
+
+We do not show the structures which only change in this way.
+
+This allows implementations' encoding and decoding logic to implement cTLS
+simply by having a mode in which integers always use the varint encoding.  Note
+that if implementations treat opaque data in the same way as `uint8` values,
+they MUST NOT convert the bytes of an opaque value to varints.
+
+As an example, suppose we are given the following struct:
+
+~~~~
+      struct {
+          uint32 FieldA;
+          opaque FieldB<0..2^16-1>;
+      } ExampleStruct;
+~~~~
+
+Encoding a value of this type with values FieldA=0x0A and FieldB=0x0B0B0B0B0B
+would result in the following octet strings in "normal" (RFC 8446) and "compact"
+modes, respectively:
+
+~~~~~
+Normal:  0000000A00050B0B0B0B0B
+Compact: 0A050B0B0B0B0B
+~~~~~
 
 
 ## Record Layer
