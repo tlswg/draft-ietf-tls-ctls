@@ -2,9 +2,9 @@
 
 This is the working area for the individual Internet-Draft, "Compact TLS 1.3".
 
-* [Editor's Copy](https://ekr.github.io/draft-rescorla-tls-ctls/#go.draft-rescorla-tls-ctls.html)
-* [Individual Draft](https://tools.ietf.org/html/draft-rescorla-tls-ctls)
-* [Compare Editor's Copy to Individual Draft](https://ekr.github.io/draft-rescorla-tls-ctls/#go.draft-rescorla-tls-ctls.diff)
+* [Editor's Copy](https://ekr.github.io/draft-ietf-tls-ctls/#go.draft-ietf-tls-ctls.html)
+* [Individual Draft](https://tools.ietf.org/html/draft-ietf-tls-ctls)
+* [Compare Editor's Copy to Individual Draft](https://ekr.github.io/draft-ietf-tls-ctls/#go.draft-ietf-tls-ctls.diff)
 
 ## Building the Draft
 
@@ -21,4 +21,4 @@ This requires that you have the necessary software installed.  See
 ## Contributing
 
 See the
-[guidelines for contributions](https://github.com/ekr/draft-rescorla-tls-ctls/blob/master/CONTRIBUTING.md).
+[guidelines for contributions](https://github.com/ekr/draft-ietf-tls-ctls/blob/master/CONTRIBUTING.md).
