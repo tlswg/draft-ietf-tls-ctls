@@ -135,12 +135,8 @@ between the record layer and the handshake layer.)
       } TLSPlaintext;
 ~~~~
 
-Encrypted records use an optimized version of the DTLS 1.3 record framing, 
-including optional CIDs and optional sequence numbers.Unlike 
-the CID and the Length field, the sequence number field in the record layer 
-header is context dependent and the present or absence is not indicated via 
-a bit flag.  Sequence numbers are not used when the payloads are carried 
-over reliable transports. 
+Encrypted records use DTLS 1.3 record framing, comprising a configuration octet
+followed by optional connection ID, sequence number, and length fields.    
 
 ~~~~
       0 1 2 3 4 5 6 7
@@ -166,12 +162,21 @@ over reliable transports.
       } DTLSCiphertext;
 ~~~~
 
+The presence and size of the connection ID field is negotiated as in DTLS.
+
 As with DTLS, the length field MAY be omitted by clearing the L bit, which means
 that the record consumes the entire rest of the data in the lower level
 transport.  In this case it is not possible to have multiple DTLSCiphertext
 format records without length fields in the same datagram.  In stream-oriented
 transports (e.g., TCP), the length field MUST be present. For use over other 
 transports length information may be inferred from the underlying layer. 
+
+Normal DTLS does not provide a mechanism for suppressing the sequence number
+field entirely.  In cases where a sequence number is not required (e.g., when a
+reliable transport is in use), a cTLS implementation may suppress it by setting
+the `suppressSequenceNumber` flag in the compression profile being used (see
+{{specifying-a-specialization}}).  When this flag is enabled, the S bit in the
+configuration octet MUST be cleared.
 
 ## Handshake Layer
 
@@ -411,6 +416,10 @@ ClientHello and ServerHello would be omitted.
 ~~~~
 
 cTLS allows specialization along the following axes:
+
+suppressSequenceNumber (boolean):
+: If present and set to true, the sequence number field is omitted from
+encrypted record headers.
 
 version (integer):
 : indicates that both sides agree to the
