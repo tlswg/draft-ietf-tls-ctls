@@ -122,17 +122,24 @@ with a varint.
 ## Record Layer
 
 The only cTLS records that are sent in plaintext are handshake records
-(ClientHello, and ServerHello/HRR). The content type is therefore constant (it
-is always `handshake`) and does not need to be explicitly conveyed in the record
-layer. Length information is signaled for unencrypted records using the varint
-encoding. (In principle, even this length could be omitted, since handshake
-messages are self-describing. Having this length field allows a clean separation
-between the record layer and the handshake layer.)
+(ClientHello and ServerHello/HRR).  The content type is therefore constant (it
+is always `handshake`), so we instead set the `content_type` field to a fixed
+cTLS-specific valud to distinguish cTLS plaintext records from encrypted
+records, TLS/DTLS records, and other protocols using the same 5-tuple.
+
+The `profile_id` field allows the client and server to agree on which
+compression profile should be used for this session (see
+{{template-based-specialization}}).  This field MUST be set to zero if and only
+if no compression profile is used.  Non-zero values are negotiated out of band
+between the client and server, as part of the specification of the compression
+profile.
 
 ~~~~
       struct {
+          ContentType content_type = ctls;
+          varint profile_id; 
           opaque fragment<0..V>;
-      } TLSPlaintext;
+      } CTLSPlaintext;
 ~~~~
 
 Encrypted records use DTLS 1.3 record framing, comprising a configuration octet
@@ -159,7 +166,7 @@ followed by optional connection ID, sequence number, and length fields.
       struct {
           opaque unified_hdr[variable];
           opaque encrypted_record[length];
-      } DTLSCiphertext;
+      } CTLSCiphertext;
 ~~~~
 
 The presence and size of the connection ID field is negotiated as in DTLS.
@@ -410,12 +417,18 @@ ClientHello and ServerHello would be omitted.
 
 ~~~~
 {
-   "version" : 772,
-   "cipherSuite" : "TLS_AES_128_GCM_SHA256"
+    "profileID": 33,
+    "version" : 772,
+    "cipherSuite" : "TLS_AES_128_GCM_SHA256"
 }
 ~~~~
 
 cTLS allows specialization along the following axes:
+
+profileID (integer):
+: The identifier for this profile, to be sent in the `profile_id` field of
+CTLSPlaintext records.  This value MUST NOT be zero.  If this value is not
+present, the default `profile_id` is 1.
 
 suppressSequenceNumber (boolean):
 : If present and set to true, the sequence number field is omitted from
@@ -628,9 +641,16 @@ which profile.
 
 # IANA Considerations
 
-This document has no IANA actions.
+This document requests that a code point be allocated from the "TLS ContentType
+registry.  This value must be in the range 0-31 (inclusive).  The row to be
+added in the registry has the following form:
 
+| Value | Description | DTLS-OK | Reference |
+|:=====:|:============|:========|:==========|
+|  TBD  | ctls        | N       | RFCXXXX   |
 
+[[ RFC EDITOR: Please replace the value TBD with the value assigned by IANA, and
+the value XXXX to the RFC number assigned for this document. ]]
 
 --- back
 
