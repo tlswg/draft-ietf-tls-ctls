@@ -551,6 +551,8 @@ This document has no IANA actions.
 
 # Sample Transcripts {#transcripts}
 
+[TODO: update these for the new varint format. They may grow a byte or
+two.]
 In this section, we provide annotated example transcripts generated using a
 draft implementation of this specification in the mint TLS library.  The
 transcripts shown are with the revised message formats defined above, as well as
