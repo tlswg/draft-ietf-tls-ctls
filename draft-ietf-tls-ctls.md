@@ -115,7 +115,7 @@ encoding properties.
 | 11   | 8      | 62          | 0-4611686018427387903 |
 {: #integer-summary title="Summary of Integer Encodings"}
 
-For example, the eight byte sequence c2 19 7c 5e ff 14 e8 8c (in hexadecimal)
+For example, the eight-byte sequence c2 19 7c 5e ff 14 e8 8c (in hexadecimal)
 decodes to the decimal value 151288809941952652; the four byte sequence 9d 7f 3e
 7d decodes to 494878333; the two byte sequence 7b bd decodes to 15293; and the
 single byte 25 decodes to 37 (as does the two byte sequence 40 25).
