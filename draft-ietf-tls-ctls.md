@@ -63,10 +63,9 @@ is achieved by four basic techniques:
   of TLS.
 - Omitting the fields and handshake messages required for preserving backwards-compatibility
   with earlier TLS versions.
-- More compact encodings, omitting unnecessary values.
-- A template-based specialization mechanism that allows for the creation
-  of application specific versions of TLS that omit unnecessary
-  values.
+- More compact encodings.
+- A template-based specialization mechanism that allows pre-populating information 
+  at both endpoints without the need for negotiation. 
 
 For the common (EC)DHE handshake with pre-established certificates, cTLS
 achieves an overhead of 45 bytes over the minimum required by the
@@ -148,128 +147,22 @@ Compact: 0A050B0B0B0B0B
 ~~~~~
 
 
-## Record Layer
+## Template-based Specialization
 
-The cTLS Record Layer assumes that records are externally framed
-(i.e., that the length is already known because it is carried in a UDP
-datagram or the like). Depending on how this was carried, you might
-need another byte or two for that framing. Thus, only the type byte
-need be carried and TLSPlaintext becomes:
+The transmission overhead in TLS 1.3 is largely contributed to by two factors, 
+namely 
+- by the negotiation of algorithm parameters, and extensions,  as well as 
+- by the exchange of certificates. 
 
-~~~~
-      struct {
-          ContentType type;
-          opaque fragment[TLSPlaintext.length];
-      } TLSPlaintext;
-~~~~
+TLS 1.3 supports different credential types and modes that 
+are impacted differently by a compression scheme. For example, TLS supports 
+certificate-based authentication, raw public key-based authentication as well 
+as pre-shared key (PSK)-based authentication. PSK-based authentication can be 
+used with externally configured PSKs or with PSKs established through tickets. 
 
-In addition, because the epoch is known in advance, the
-dummy content type is not needed for the ciphertext, so
-TLSCiphertext becomes:
-
-~~~~
-      struct {
-          opaque content[TLSPlaintext.length];
-          ContentType type;
-          uint8 zeros[length_of_padding];
-      } TLSInnerPlaintext;
-
-      struct {
-          opaque encrypted_record[TLSCiphertext.length];
-      } TLSCiphertext;
-~~~~
-
-Note: The user is responsible for ensuring that the sequence
-numbers/nonces are handled in the usual fashion.
-
-
-## Handshake Layer
-
-The cTLS handshake framing is same as the TLS 1.3 handshake
-framing, except for two changes:
-
-1. The length field is omitted
-1. The HelloRetryRequest message is a true handshake message
-   instead of a specialization of ServerHello.
-
-~~~~
-      struct {
-          HandshakeType msg_type;    /* handshake type */
-          select (Handshake.msg_type) {
-              case client_hello:          ClientHello;
-              case server_hello:          ServerHello;
-              case hello_retry_request:   HelloRetryRequest;
-              case end_of_early_data:     EndOfEarlyData;
-              case encrypted_extensions:  EncryptedExtensions;
-              case certificate_request:   CertificateRequest;
-              case certificate:           Certificate;
-              case certificate_verify:    CertificateVerify;
-              case finished:              Finished;
-              case new_session_ticket:    NewSessionTicket;
-              case key_update:            KeyUpdate;
-          };
-      } Handshake;
-~~~~
-
-
-# Handshake Messages
-
-In general, we retain the basic structure of each individual
-TLS handshake message. However, the following handshake
-messages have been modified for space reduction and cleaned
-up to remove pre TLS 1.3 baggage.
-
-## ClientHello
-
-The cTLS ClientHello is as follows.
-
-~~~~
-      opaque Random[RandomLength];      // variable length
-
-      struct {
-          Random random;
-          CipherSuite cipher_suites<1..V>;
-          Extension extensions<1..V>;
-      } ClientHello;
-~~~~
-
-## ServerHello
-
-We redefine ServerHello in a similar way:
-
-~~~~
-      struct {
-          Random random;
-          CipherSuite cipher_suite;
-          Extension extensions<1..V>;
-      } ServerHello;
-~~~~
-
-## HelloRetryRequest
-
-The HelloRetryRequest has the following format:
-
-~~~~
-      struct {
-          CipherSuite cipher_suite;
-          Extension extensions<2..V>;
-      } HelloRetryRequest;
-~~~~
-
-It is the same as the ServerHello above but without the unnecessary
-sentinel Random value.
-
-# Template-Based Specialization
-
-The protocol in the previous section is fully general and isomorphic
-to TLS 1.3; effectively it's just a small cleanup of the wire encoding
-to match what we might have done starting from scratch. It achieves
-some compaction, but only a modest amount. cTLS also includes a mechanism
-for achieving very high compaction using template-based specialization.
-
-The basic idea is that we start with the basic TLS 1.3 handshake,
-which is fully general and then remove degrees of freedom, eliding
-parts of the handshake which are used to express those degrees of
+The basic idea of template-based specialization is that we start with the basic 
+TLS 1.3 handshake, which is fully general and then remove degrees of freedom, 
+eliding parts of the handshake which are used to express those degrees of
 freedom. For example, if we only support one version of TLS, then it
 is not necessary to have version negotiation and the
 supported_versions extension can be omitted.
@@ -292,23 +185,20 @@ layer between the handshake and the record layer:
 +---------------+---------------+---------------+
 ~~~~~
 
-Specializations are defined by a "compression profile" that specifies what
-features are to be optimized out of the handshake.  In the following
-subsections, we define the structure of these profiles, and how they are used in
-compressing and decompressing handshake messages.
+By assuming that out-of-band agreements took place already prior to the start of
+the cTLS protocol exchange, the amount of data exchanged can be radically reduced. 
+Because different clients may use different compression templates and because multiple 
+compression templates may be available for use in different deployment environments, 
+a client needs to inform the server about the profile it is planning to use. The 
+profile field in the ClientHello serves this purpose. 
 
-[[OPEN ISSUE: Do we want to have an explicit cTLS extension
-indicating that cTLS is in use and which specialization is in
-use? This goes back to whether we want the use of cTLS to
-be explicit.]]
+While it is possible to apply the template-based serialization to the entire 
+TLS 1.3 protocol, this version of the specification focuses on the certificate-based
+exchange. For other exchanges, the standard TLS 1.3 protocol is used instead. Most
+exchanges in TLS 1.3 are highly optimized and do not require compression to be used. 
 
-
-## Specifying a Specialization
-
-A compression profile defining of a specialized version of TLS is
-defined using a JSON dictionary. Each axis of specialization
-is a key in the dictionary. [[OPEN ISSUE: If we ever want to
-serialize this, we'll want to use a list instead.]].
+The compression profile defining the use of algorithms, algorithm parameters, and 
+extensions is specified via a JSON dictionary.
 
 For example, the following specialization describes a protocol
 with a single fixed version (TLS 1.3) and a single fixed
@@ -323,7 +213,10 @@ ClientHello and ServerHello would be omitted.
 }
 ~~~~
 
-cTLS allows specialization along the following axes:
+The following elements are defined: 
+
+profile (integer): 
+: identifies the profile being defined. 
 
 version (integer):
 : indicates that both sides agree to the
@@ -354,15 +247,43 @@ group is listed by the code point name in {{RFC8446}}, Section 4.2.7.
 (e.g., ed25519). This implies a literal "signature_algorithms" extension
 consisting solely of this group.
 
-randomSize (integer):
+random (integer):
 : indicates that the ClientHello.Random and ServerHello.Random values
 are truncated to the given values. When the transcript is
 reconstructed, the Random is padded to the right with 0s and the
 anti-downgrade mechanism in {{RFC8446)}, Section 4.1.3 is disabled.
 IMPORTANT: Using short Random values can lead to potential
-attacks. When Random values are shorter than 8 bytes, PSK-only modes
-MUST NOT be used, and each side MUST use fresh DH ephemerals.
-The Random length MUST be less than or equal to 32 bytes.
+attacks. The Random length MUST be less than or equal to 32 bytes.
+When this element is omitted, the random values are created by hashing 
+the ephemeral public key via the hash algorithm indicated in 
+cipherSuite and truncated to 32 bytes. 
+
+mutualAuth (boolean):
+: indicates whether the client has to be prepared to transmit a 
+Certificate and a CertificateVerify message and whether the server 
+has to transmit a CertificateRequest message. 
+
+extension_order: 
+: indicates in what order extensions appear in respective messages. 
+This allows to omit sending the type. If there is only a single 
+extension to be transmitted, then the extension length field can also
+be omitted. For example, imagine that only the KeyShare extension 
+needs to be sent in the ClientHello as the only extension. Then, 
+the following structure
+
+~~~
+   28                    // Extensions.length
+   33 26                 // KeyShare
+     0024                // client_shares.length
+       001d              // KeyShareEntry.group
+       0020 a690...af948 // KeyShareEntry.key_exchange
+~~~       
+
+is compressed down to
+
+~~~
+   0020 a690...af948 // KeyShareEntry.key_exchange
+~~~
 
 clientHelloExtensions (predefined extensions):
 : Predefined ClientHello extensions, see {predefined-extensions}
@@ -481,6 +402,219 @@ mistaken for compressed one and erroneously decompressed.  For X.509, it is
 sufficient for the first byte of the compressed value (key) to have a value
 other than 0x30, since every X.509 certificate starts with this byte.
 
+## Record Layer
+
+The cTLS Record Layer assumes that records are externally framed
+(i.e., that the length is already known because it is carried in a UDP
+datagram or the like). Depending on how this was carried, you might
+need another byte or two for that framing. Thus, only the type byte
+need be carried and TLSPlaintext becomes:
+
+~~~~
+      struct {
+          ContentType type;
+          opaque fragment[TLSPlaintext.length];
+      } TLSPlaintext;
+~~~~
+
+In addition, because the epoch is known in advance, the
+dummy content type is not needed for the ciphertext, so
+TLSCiphertext becomes:
+
+~~~~
+      struct {
+          opaque content[TLSPlaintext.length];
+          ContentType type;
+          uint8 zeros[length_of_padding];
+      } TLSInnerPlaintext;
+
+      struct {
+          opaque encrypted_record[TLSCiphertext.length];
+      } TLSCiphertext;
+~~~~
+
+Note: The user is responsible for ensuring that the sequence
+numbers/nonces are handled in the usual fashion.
+
+
+## Handshake Layer
+
+The cTLS handshake framing is same as the TLS 1.3 handshake
+framing, except for two changes:
+
+1. The length field is omitted
+1. The HelloRetryRequest message is a true handshake message
+   instead of a specialization of ServerHello.
+
+~~~~
+      struct {
+          HandshakeType msg_type;    /* handshake type */
+          select (Handshake.msg_type) {
+              case client_hello:          ClientHello;
+              case server_hello:          ServerHello;
+              case hello_retry_request:   HelloRetryRequest;
+              case end_of_early_data:     EndOfEarlyData;
+              case encrypted_extensions:  EncryptedExtensions;
+              case certificate_request:   CertificateRequest;
+              case certificate:           Certificate;
+              case certificate_verify:    CertificateVerify;
+              case finished:              Finished;
+              case new_session_ticket:    NewSessionTicket;
+              case key_update:            KeyUpdate;
+          };
+      } Handshake;
+~~~~
+
+Empty messages are not transmitted. For example, if an 
+EncryptedExtensions message contains no extension then the 
+entire message is omitted. 
+
+# Handshake Messages
+
+In general, we retain the basic structure of each individual
+TLS handshake message. However, the following handshake
+messages have been modified for space reduction and cleaned
+up to remove pre TLS 1.3 baggage.
+
+## ClientHello
+
+The cTLS ClientHello is as follows. The random value 
+may be omitted as well as the cipher_suite. Extensions 
+may also be omitted. 
+
+~~~~
+      opaque Random[RandomLength]; 
+
+      struct {
+          varint profile; 
+          Random random;
+          CipherSuite cipher_suites<1..V>;
+          Extension extensions<1..V>;
+      } ClientHello;
+~~~~
+
+## ServerHello
+
+We redefine ServerHello in a similar way:
+The random value may be omitted as well as the cipher_suite.
+Extensions may also be omitted. 
+
+~~~~
+      struct {
+          Random random;
+          CipherSuite cipher_suite;
+          Extension extensions<1..V>;
+      } ServerHello;
+~~~~
+
+## HelloRetryRequest
+
+The HelloRetryRequest has the following format:
+
+~~~~
+      struct {
+          CipherSuite cipher_suite;
+          Extension extensions<2..V>;
+      } HelloRetryRequest;
+~~~~
+
+It is the same as the ServerHello above but without the unnecessary
+sentinel Random value.
+
+## EncryptedExtensions 
+
+The EncryptedExtensions message is used to carry 
+extensions that have prior to TLS 1.3 been conveyed in the 
+ServerHello. If there are no extensions to be transmitted 
+with the EncryptedExtensions message then this message is 
+omitted. 
+
+~~~~
+      struct {
+          Extension extensions<0..2^16-1>;
+      } EncryptedExtensions;
+~~~~
+      
+      
+## CertificateRequest
+
+If the setting of the certificate_request_context parameter in the 
+certificateRequestExtensions field of the template compression profile 
+is set to zero then the certificate_request_context is omitted. 
+
+If there no extensions then the extension field is omitted. 
+
+~~~~
+      struct {
+          opaque certificate_request_context<0..2^8-1>;
+          Extension extensions<2..2^16-1>;
+      } CertificateRequest;
+~~~~
+
+If this message is empty, then the entire message is omitted. 
+
+## Certificate 
+
+The configuration of the certificate_request_context parameter in the 
+certificateRequestExtensions field of the template compression profile 
+determines whether the certificate_request_context field can be omitted 
+in the Certificate message. A value of zero in the certificate_request_context
+parameter indicates the desire to omit this field.  
+    
+The extensions field is omitted when no extensions are present. 
+
+~~~~
+      enum {
+          X509(0),
+          RawPublicKey(2),
+          cert_id(TBD1),
+          (255)
+      } CertificateType;
+
+      struct {
+          select (certificate_type) {
+              case RawPublicKey:
+                /* From RFC 7250 ASN.1_subjectPublicKeyInfo */
+                opaque ASN1_subjectPublicKeyInfo<1..2^24-1>;
+
+              case X509:
+                opaque cert_data<1..2^24-1>;
+                
+              case cert_id: 
+                opaque key_id<1..^8>;
+          };
+          Extension extensions<0..2^16-1>;
+      } CertificateEntry;
+
+      struct {
+          opaque certificate_request_context<0..2^8-1>;
+          CertificateEntry certificate_list<0..2^24-1>;
+      } Certificate;
+~~~~
+      
+## CertificateVerify
+
+The CertificateVerify message does not contain the signature algorithm 
+because it can be obtained from the signatureAlgorithm parameter of the
+template compression profile. 
+
+~~~~
+      struct {
+          opaque signature<0..2^16-1>;
+      } CertificateVerify;
+~~~~
+      
+## Finished
+
+The Finished message contains no length information because the length is 
+determined by the finishedSize parameter of the template compression profile. 
+
+~~~~
+      struct {
+          opaque verify_data[finishedSize];
+      } Finished;
+~~~~
+
 # Examples
 
 The following section provides some example specializations.
@@ -498,6 +632,7 @@ and everything else is ordinary TLS 1.3.
 
 ~~~~
 {
+   "Profile" : 1, 
    "Version" : 772,
    "Random": 16,
    "CipherSuite" : "TLS_AES_128_GCM_SHA256",
@@ -526,6 +661,9 @@ requires some analysis, especially as it looks like a potential source
 of identity misbinding. This is, however, entirely separable
 from the rest of the specification.
 
+The idea of hashing the ephemeral public keys and their use as random 
+values was introduced by Karthik Bhargavan and requires analysis. 
+
 Transcript expansion also needs some analysis and we need to determine
 whether we need an extension to indicate that cTLS is in use and with
 which profile.
@@ -534,185 +672,121 @@ which profile.
 
 This document has no IANA actions.
 
-
-
 --- back
 
-# Sample Transcripts {#transcripts}
+# Example Exchange {#transcripts}
 
-In this section, we provide annotated example transcripts generated using a
-draft implementation of this specification in the mint TLS library.  The
-transcripts shown are with the revised message formats defined above, as well as
-specialization to the indicated cases, using the aggressive compression profiles
-noted below.  The resulting byte counts are as follows:
+The follow exchange illustrates a complete cTLS-based exchange supporting 
+mutual authentication using certificates. The digital signatures use ECDSA with SHA256 
+and NIST P256r1. The ephemeral Diffie-Hellman uses the FX25519 curve and 
+the exchange negotiates TLS-AES-128-CCM8-SHA256. 
+The certificates are exchanged using certificate identifiers. 
+
+The resulting byte counts are as follows:
 
 ~~~~~
-                     ECDHE                PSK
-              ------------------  ------------------
-              TLS  CTLS  Overhead  TLS  CTLS  Overhead
-              ---  ----  --------  ---  ----  --------
-ClientHello   132   50      10     147   67      15
-ServerHello    90   48       8      56   18       2
-ServerFlight  478  104      16      42   12       3
-ClientFlight  458  100      11      36   10       1
-=====================================================
-Total        1158  302      45     280  107      21
+                     ECDHE
+              ------------------
+              TLS  CTLS  Overhead
+              ---  ----  --------
+ClientHello   132   36       4
+ServerHello    90   36       4
+ServerFlight  478   80       7
+ClientFlight  458   80       7
+==================================
+Total        1158  232      22
 ~~~~~
 
-To increase legibility, we show the plaintext bytes of handshake messages that
-would be encrypted and shorten some of the cryptographic values (shown with
-"...").  The totals above include 9 bytes of encryption overhead for the
-client and server flights, which would otherwise be encrypted (with a one-byte
-content type and an 8-byte tag).
 
-Obviously, these figures are very provisional, and as noted at several points
-above, there are additional opportunities to reduce overhead.
-
-[[NOTE: We are using a shortened Finished message here. See
-{{specifying-a-specialization}} for notes on Finished size. However, the overhead is constant
-for all reasonable Finished sizes.]]
-
-## ECDHE and Mutual Certificate-based Authentication
-
-Compression Profile:
+The following compression profile was used in this example:
 
 ~~~~~
 {
+  "profile": 1, 
   "version": 772,
   "cipherSuite": "TLS_AES_128_CCM_8_SHA256",
   "dhGroup": "X25519",
   "signatureAlgorithm": "ECDSA_P256_SHA256",
-  "randomSize": 8,
   "finishedSize": 8,
   "clientHelloExtensions": {
     "server_name": "000e00000b6578616d706c652e636f6d",
   },
   "certificateRequestExtensions": {
+    "certificate_request_context": 0, 
     "signature_algorithms": "00020403"
   },
+  "mutualAuth": true, 
+  "extension-order": {
+       "clientHelloExtensions": {
+          Key_share
+       },
+       "ServerHelloExtensions": {
+          Key_share
+       },
+  },
+  
   "knownCertificates": {
     "61": "3082...",
-    "62": "3082..."
+    "62": "3082...", 
+    "63": "...", 
+    "64": "...", 
+    ...
   }
 }
 ~~~~~
 
-ClientHello: 50 bytes = RANDOM(8) + DH(32) + Overhead(10)
+ClientHello: 36 bytes = DH(32) + Overhead(4)
 
 ~~~
 01                    // ClientHello
-2ef16120dd84a721      // Random
-28                    // Extensions.length
-33 26                 // KeyShare
-  0024                // client_shares.length
-    001d              // KeyShareEntry.group
-    0020 a690...af948 // KeyShareEntry.key_exchange
+01                    // Profile ID
+0020 a690...af948     // KeyShareEntry.key_exchange
 ~~~
 
-ServerHello: 48 = RANDOM(8) + DH(32) + Overhead(8)
+ServerHello: 36 = DH(32) + Overhead(4)
 
 ~~~
 02                 // ServerHello
-962547bba5e00973   // Random
 26                 // Extensions.length
-33 24              // KeyShare
-  001d             // KeyShareEntry.group
-  0020 9fbc...0f49 // KeyShareEntry.key_exchange
+0020 9fbc...0f49   // KeyShareEntry.key_exchange
 ~~~
 
-Server Flight: 96 = SIG(71) + MAC(8) + CERTID(1) + Overhead(16)
+Server Flight: 80 = SIG(64) + MAC(8) + CERTID(1) + Overhead(7)
+
+The EncryptedExtensions, and the CertificateRequest messages 
+are omitted because they are empty. 
 
 ~~~
-08                 // EncryptedExtensions
-  00               //   Extensions.length
-0d                 // CertificateRequest
-  00               //   CertificateRequestContext.length
-  00               //   Extensions.length
 0b                 // Certificate
-  00               //   CertificateRequestContext
   03               //   CertificateList
     01             //     CertData.length
       61           //       CertData = 'a'
-    00             //   Extensions.length
+
 0f                 // CertificateVerify
-  0403             //   SignatureAlgorithm
-  4047 3045...10ce //   Signature
+  4064             //   Signature.length
+       3045...10ce //   Signature
+  
 14                 // Finished
   bfc9d66715bb2b04 //   VerifyData
 ~~~
 
-Client Flight: 91 bytes = SIG(71) + MAC(8) + CERTID(1) + Overhead(11)
+Client Flight: 80 bytes = SIG(64) + MAC(8) + CERTID(1) + Overhead(7)
 
 ~~~
 0b                 // Certificate
-  00               //   CertificateRequestContext
   03               //   CertificateList
     01             //     CertData.length
       62           //       CertData = 'b'
-    00             //     Extensions.length
+
+
 0f                 // CertificateVerify
-  0403             //   SignatureAlgorithm
-  4047 3045...f60e //   Signature.length
+  4064             //   Signature.length
+       3045...f60e //   Signature
+
 14                 // Finished
   35e9c34eec2c5dc1 //   VerifyData
 ~~~
 
-## PSK
-
-Compression Profile:
-
-~~~~~
-{
-  "version": 772,
-  "cipherSuite": "TLS_AES_128_CCM_8_SHA256",
-  "signatureAlgorithm": "ECDSA_P256_SHA256",
-  "randomSize": 16,
-  "finishedSize": 0,
-  "clientHelloExtensions": {
-    "server_name": "000e00000b6578616d706c652e636f6d",
-    "psk_key_exchange_modes": "0100"
-  },
-  "serverHelloExtensions": {
-    "pre_shared_key": "0000"
-  }
-}
-~~~~~
-
-ClientHello: 67 bytes = RANDOM(16) + PSKID(4) + BINDER(32) + Overhead(15)
-
-~~~
-01                               // ClientHello
-e230115e62d9a3b58f73e0f2896b2e35 // Random
-2d                               // Extensions.length
-29 2b                            // PreSharedKey
-    000a                         //   identities.length
-      0004 00010203              //     identity
-      7bd05af6                   //     obfuscated_ticket_age
-    0021                         //   binders.length
-      20 2428...bb3f             //     binder
-~~~
-
-ServerHello: 18 bytes = RANDOM(16) + 2
-
-~~~
-02                                // ServerHello
-7232e2d3e61e476b844d9c1f6a4c868f  // Random
-00                                // Extensions.length
-~~~
-
-Server Flight: 3 bytes = Overhead(3)
-
-~~~
-08    // EncryptedExtensions
-  00  //   Extensions.length
-14    // Finished
-~~~
-
-Client Flight: 1 byte = Overhead(3)
-
-~~~
-14    // Finished
-~~~
 
 # Acknowledgments
 {:numbered="false"}
