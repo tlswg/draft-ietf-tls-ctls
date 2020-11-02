@@ -565,6 +565,7 @@ added in the registry has the following form:
 [[ RFC EDITOR: Please replace the value TBD with the value assigned by IANA, and
 the value XXXX to the RFC number assigned for this document. ]]
 
+[[OPEN ISSUE: Should we require standards action for all profile IDs that would fit in 2 octets.]]
 
 --- back
 
