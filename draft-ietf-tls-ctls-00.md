@@ -1,7 +1,7 @@
 ---
 title: Compact TLS 1.3
 abbrev: cTLS 1.3
-docname: draft-ietf-tls-ctls-latest
+docname: draft-ietf-tls-ctls-00
 category: info
 
 ipr: trust200902
@@ -116,16 +116,36 @@ a vector with a top range of a varint is denoted as:
      opaque foo<1..V>;
 ~~~~~
 
-cTLS uses the varint encoding for all multi-byte integers in TLS,
-including:
+cTLS replaces all integers in TLS with varints, including:
 
-* Values of type uint16, uint24, uint32, uint64
-* Array and vector entries of these types
-* Encoded lengths for vectors that allow more than 255 entries
-* Enums that allow more than 255 entries
+* Values of uint8, uint16, uint24, uint32, and uint64
+* Vector length prefixes
+* Enum / code point values
 
-Values of type uint8, opaque values, and one-byte enums are not
-affected.  We do not show the structures which only change in this way.
+We do not show the structures which only change in this way.
+
+This allows implementations' encoding and decoding logic to implement cTLS
+simply by having a mode in which integers always use the varint encoding.  Note
+that if implementations treat opaque data in the same way as `uint8` values,
+they MUST NOT convert the bytes of an opaque value to varints.
+
+As an example, suppose we are given the following struct:
+
+~~~~
+      struct {
+          uint32 FieldA;
+          opaque FieldB<0..2^16-1>;
+      } ExampleStruct;
+~~~~
+
+Encoding a value of this type with values FieldA=0x0A and FieldB=0x0B0B0B0B0B
+would result in the following octet strings in "normal" (RFC 8446) and "compact"
+modes, respectively:
+
+~~~~~
+Normal:  0000000A00050B0B0B0B0B
+Compact: 0A050B0B0B0B0B
+~~~~~
 
 
 ## Record Layer
