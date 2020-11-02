@@ -116,8 +116,16 @@ a vector with a top range of a varint is denoted as:
      opaque foo<1..V>;
 ~~~~~
 
-cTLS replaces all the integers in TLS (including code points) with
-varints; we do not show the structures which only change in this way.
+cTLS uses the varint encoding for all multi-byte integers in TLS,
+including:
+
+* Values of type uint16, uint24, uint32, uint64
+* Array and vector entries of these types
+* Encoded lengths for vectors that allow more than 255 entries
+* Enums that allow more than 255 entries
+
+Values of type uint8, opaque values, and one-byte enums are not
+affected.  We do not show the structures which only change in this way.
 
 
 ## Record Layer
