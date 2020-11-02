@@ -133,7 +133,7 @@ affected.  We do not show the structures which only change in this way.
 The only cTLS records that are sent in plaintext are handshake records
 (ClientHello and ServerHello/HRR).  The content type is therefore constant (it
 is always `handshake`), so we instead set the `content_type` field to a fixed
-cTLS-specific valud to distinguish cTLS plaintext records from encrypted
+cTLS-specific value to distinguish cTLS plaintext records from encrypted
 records, TLS/DTLS records, and other protocols using the same 5-tuple.
 
 The `profile_id` field allows the client and server to agree on which
