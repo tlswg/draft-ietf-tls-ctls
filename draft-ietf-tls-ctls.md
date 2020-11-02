@@ -145,7 +145,7 @@ profile.
 
 ~~~~
       struct {
-          ContentType content_type = ctls;
+          ContentType content_type = ctls_handshake;
           varint profile_id; 
           opaque fragment<0..V>;
       } CTLSPlaintext;
