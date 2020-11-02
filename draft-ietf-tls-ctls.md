@@ -277,12 +277,6 @@ features are to be optimized out of the handshake.  In the following
 subsections, we define the structure of these profiles, and how they are used in
 compressing and decompressing handshake messages.
 
-[[OPEN ISSUE: Do we want to have an explicit cTLS extension
-indicating that cTLS is in use and which specialization is in
-use? This goes back to whether we want the use of cTLS to
-be explicit.]]
-
-
 ## Specifying a Specialization
 
 A compression profile defining of a specialized version of TLS is
@@ -469,7 +463,7 @@ TLS 1.3 only:
 
 ~~~~
 {
-   "Version" : 0x0304
+   "version" : 0x0304
 }
 ~~~~
 
@@ -478,11 +472,11 @@ and everything else is ordinary TLS 1.3.
 
 ~~~~
 {
-   "Version" : 772,
-   "Random": 16,
-   "CipherSuite" : "TLS_AES_128_GCM_SHA256",
-   "DHGroup": "X25519",
-   "Extensions": {
+   "version" : 772,
+   "randomSize": 16,
+   "cipherSuite" : "TLS_AES_128_GCM_SHA256",
+   "dhGroup": "X25519",
+   "clientHelloExtensions": {
       "named_groups": 29,
       "application_layer_protocol_negotiation" : "030016832",
       "..." : null
@@ -616,7 +610,8 @@ Server Flight: 96 = SIG(71) + MAC(8) + CERTID(1) + Overhead(16)
     00             //   Extensions.length
 0f                 // CertificateVerify
   0403             //   SignatureAlgorithm
-  4047 3045...10ce //   Signature
+  4047             //   Signature.length
+     3045...f60e   //      Signature 
 14                 // Finished
   bfc9d66715bb2b04 //   VerifyData
 ~~~
@@ -632,7 +627,8 @@ Client Flight: 91 bytes = SIG(71) + MAC(8) + CERTID(1) + Overhead(11)
     00             //     Extensions.length
 0f                 // CertificateVerify
   0403             //   SignatureAlgorithm
-  4047 3045...f60e //   Signature.length
+  4047             //   Signature.length
+     3045...f60e   //      Signature   
 14                 // Finished
   35e9c34eec2c5dc1 //   VerifyData
 ~~~
