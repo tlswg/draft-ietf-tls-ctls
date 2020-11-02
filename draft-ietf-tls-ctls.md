@@ -151,6 +151,10 @@ profile.
       } CTLSPlaintext;
 ~~~~
 
+[[OPEN ISSUE: The profile_id is needed in the ClientHello to inform the server
+what compression profile to use. For a ServerHello this field is not required. 
+Should we make this field optional?]]
+
 Encrypted records use DTLS 1.3 record framing, comprising a configuration octet
 followed by optional connection ID, sequence number, and length fields.    
 
