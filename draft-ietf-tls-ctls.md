@@ -192,9 +192,9 @@ compression templates may be available for use in different deployment environme
 a client needs to inform the server about the profile it is planning to use. The 
 profile field in the ClientHello serves this purpose. 
 
-While it is possible to apply the template-based serialization to the entire 
-TLS 1.3 protocol, this version of the specification focuses on the certificate-based
-exchange. For other exchanges, the standard TLS 1.3 protocol is used instead. Most
+Although the template-based specialization mechanisms described here are general,
+we also include specific mechanism for certificate-based exchanges because those are
+where the most complexity and size reduction can be obtained. Most
 exchanges in TLS 1.3 are highly optimized and do not require compression to be used. 
 
 The compression profile defining the use of algorithms, algorithm parameters, and 
