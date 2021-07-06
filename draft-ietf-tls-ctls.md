@@ -276,7 +276,7 @@ the following structure
        0020 a690...af948 // KeyShareEntry.key_exchange
 ~~~       
 
-is compressed down to
+is compressed down to (assuming the KeyShare group has been pre-agreed)
 
 ~~~
    0020 a690...af948 // KeyShareEntry.key_exchange
