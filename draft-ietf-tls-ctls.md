@@ -249,14 +249,11 @@ consisting solely of this group.
 
 random (integer):
 : indicates that the ClientHello.Random and ServerHello.Random values
-are truncated to the given values. When the transcript is
+are truncated to the given length. When the transcript is
 reconstructed, the Random is padded to the right with 0s and the
 anti-downgrade mechanism in {{RFC8446)}, Section 4.1.3 is disabled.
 IMPORTANT: Using short Random values can lead to potential
 attacks. The Random length MUST be less than or equal to 32 bytes.
-When this element is omitted, the random values are created by hashing 
-the ephemeral public key via the hash algorithm indicated in 
-cipherSuite and truncated to 32 bytes. 
 
 mutualAuth (boolean):
 : indicates whether the client has to be prepared to transmit a 
