@@ -1,6 +1,6 @@
 # Compact TLS 1.3
 
-This is the working area for the individual Internet-Draft, "Compact TLS 1.3".
+This is the working area for the TLS WG Internet-Draft, "Compact TLS 1.3".
 
 * [Editor's Copy](https://ekr.github.io/draft-ietf-tls-ctls/#go.draft-ietf-tls-ctls.html)
 * [Individual Draft](https://tools.ietf.org/html/draft-ietf-tls-ctls)
