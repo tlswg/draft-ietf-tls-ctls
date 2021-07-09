@@ -127,7 +127,7 @@ affected.  We do not show the structures which only change in this way.
 ## Template-based Specialization
 
 The transmission overhead in TLS 1.3 is largely contributed to by two factors, 
-namely 
+:
 - by the negotiation of algorithm parameters, and extensions,  as well as 
 - by the exchange of certificates. 
 
