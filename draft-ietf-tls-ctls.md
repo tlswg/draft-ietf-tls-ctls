@@ -231,6 +231,10 @@ anti-downgrade mechanism in {{RFC8446)}, Section 4.1.3 is disabled.
 IMPORTANT: Using short Random values can lead to potential
 attacks. The Random length MUST be less than or equal to 32 bytes.
 
+[[Open Issue: Karthik Bhargavan suggested the idea of hashing 
+ephemeral public keys and to use the result (truncated to 32 bytes)
+as random values. Such a change would require a security analysis. ]]
+
 mutualAuth (boolean):
 : indicates whether the client has to be prepared to transmit a 
 Certificate and a CertificateVerify message and whether the server 
@@ -571,9 +575,6 @@ The use of key ids is a new feature introduced in this document, which
 requires some analysis, especially as it looks like a potential source
 of identity misbinding. This is, however, entirely separable
 from the rest of the specification.
-
-The idea of hashing the ephemeral public keys and their use as random 
-values was introduced by Karthik Bhargavan and requires analysis. 
 
 Transcript expansion also needs some analysis and we need to determine
 whether we need an extension to indicate that cTLS is in use and with
