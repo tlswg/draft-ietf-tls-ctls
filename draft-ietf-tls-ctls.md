@@ -128,8 +128,8 @@ affected.  We do not show the structures which only change in this way.
 
 The transmission overhead in TLS 1.3 is largely contributed to by two factors, 
 :
-- by the negotiation of algorithm parameters, and extensions,  as well as 
-- by the exchange of certificates. 
+- the negotiation of algorithm parameters, and extensions,  as well as 
+- the exchange of certificates. 
 
 TLS 1.3 supports different credential types and modes that 
 are impacted differently by a compression scheme. For example, TLS supports 
