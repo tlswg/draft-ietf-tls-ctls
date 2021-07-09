@@ -171,7 +171,7 @@ profile field in the ClientHello serves this purpose.
 
 Although the template-based specialization mechanisms described here are general,
 we also include specific mechanism for certificate-based exchanges because those are
-where the most complexity and size reduction can be obtained. Most exchanges in 
+where the most complexity and size reduction can be obtained. Most of the other exchanges in 
 TLS 1.3 are highly optimized and do not require compression to be used. 
 
 The compression profile defining the use of algorithms, algorithm parameters, and 
