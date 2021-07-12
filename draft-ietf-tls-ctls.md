@@ -236,9 +236,12 @@ ephemeral public keys and to use the result (truncated to 32 bytes)
 as random values. Such a change would require a security analysis. ]]
 
 mutualAuth (boolean):
-: indicates whether the client has to be prepared to transmit a 
-Certificate and a CertificateVerify message and whether the server 
-has to transmit a CertificateRequest message. 
+: if set to true, indicates that the client must authenticate with
+a certificate by sending Certificate and a CertificateVerify message.
+The server MUST omit the CertificateRequest message, as its contents
+are redundant.
+[[OPEN ISSUE: We don't actually say that you can omit empty messages,
+so we need to add that somewhere.]]
 
 extension_order: 
 : indicates in what order extensions appear in respective messages. 
