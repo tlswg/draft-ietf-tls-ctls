@@ -227,7 +227,7 @@ random (integer):
 : indicates that the ClientHello.Random and ServerHello.Random values
 are truncated to the given length. When the transcript is
 reconstructed, the Random is padded to the right with 0s and the
-anti-downgrade mechanism in {{RFC8446)}, Section 4.1.3 is disabled.
+anti-downgrade mechanism in {{RFC8446}}, Section 4.1.3 is disabled.
 IMPORTANT: Using short Random values can lead to potential
 attacks. The Random length MUST be less than or equal to 32 bytes.
 
