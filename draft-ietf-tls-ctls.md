@@ -88,8 +88,8 @@ when, and only when, they appear in all capitals, as shown here.
 Structure definitions listed below override TLS 1.3 definitions; any PDU
 not internally defined is taken from TLS 1.3.
 
-## Template-based Specialization
-
+## Template-based Specialization 
+ 
 A significant transmission overhead in TLS 1.3 is contributed to by two factors, 
 :
 - the negotiation of algorithm parameters, and extensions,  as well as 
@@ -421,7 +421,7 @@ Normal DTLS does not provide a mechanism for suppressing the sequence number
 field entirely.  In cases where a sequence number is not required (e.g., when a
 reliable transport is in use), a cTLS implementation may suppress it by setting
 the `suppressSequenceNumber` flag in the compression profile being used (see
-{{specifying-a-specialization}}).  When this flag is enabled, the S bit in the
+{{template-based-specialization}}).  When this flag is enabled, the S bit in the
 configuration octet MUST be cleared.
 
 
