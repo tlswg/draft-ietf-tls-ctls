@@ -373,7 +373,7 @@ profile.
       struct {
           ContentType content_type = ctls_handshake;
           opaque profile_id<0..2^8-1>;
-          opaque fragment<0..V>;
+          opaque fragment<0..2^16-1>;
       } CTLSPlaintext;
 ~~~~
 
