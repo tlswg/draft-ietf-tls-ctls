@@ -146,7 +146,7 @@ version (TLS 1.3) and a single fixed cipher suite (TLS_AES_128_GCM_SHA256). On t
 wire, ClientHello.cipher_suites, ServerHello.cipher_suites, and the 
 supported_versions extensions in the ClientHello and ServerHello would be omitted.
 
-~~~~
+~~~~JSON
 {
    "version" : 772,
    "cipherSuite" : "TLS_AES_128_GCM_SHA256"
@@ -255,6 +255,11 @@ to know the minimum safe Finished size. See {{RFC8446}};
 Section E.1 for more on this, as well as
 https://mailarchive.ietf.org/arch/msg/tls/TugB5ddJu3nYg7chcyeIyUqWSbA.]]
 
+optional (object):
+: contains keys that are not required to be understood by the client.
+The server MUST be able to accept connections that do or do not use any of
+these keys.  A key MUST NOT appear in both the main template and the optional
+section.
 
 ### Requirements on TLS Implementations
 
@@ -334,7 +339,7 @@ A known certificates object is a JSON dictionary whose keys are strings containi
 hex-encoded compressed values.  The corresponding values are hex-encoded strings
 representing the uncompressed values.  For example:
 
-~~~~~
+~~~~~JSON
 {
   "00": "3082...",
   "01": "3082...",
@@ -511,15 +516,14 @@ For this example we use TLS 1.3 only with AES_GCM,
 X25519, ALPN h2, short random values, and everything 
 else is ordinary TLS 1.3.
 
-~~~~
+~~~~JSON
 {
-   "Version" : 0x0304
-   "Profile" : 1, 
-   "Version" : 772,
-   "Random": 16,
-   "CipherSuite" : "TLS_AES_128_GCM_SHA256",
-   "DHGroup": "X25519",
-   "Extensions": {
+   "profile" : 1,
+   "version" : 772,
+   "random": 16,
+   "cipherSuite" : "TLS_AES_128_GCM_SHA256",
+   "dhGroup": "X25519",
+   "clientHelloExtensions": {
       "named_groups": 29,
       "application_layer_protocol_negotiation" : "030016832",
       "..." : null
@@ -549,6 +553,8 @@ which profile.
 
 # IANA Considerations
 
+## Adding a ContentType
+
 This document requests that a code point be allocated from the "TLS ContentType
 registry.  This value must be in the range 0-31 (inclusive).  The row to be
 added in the registry has the following form:
@@ -561,6 +567,28 @@ added in the registry has the following form:
 the value XXXX to the RFC number assigned for this document. ]]
 
 [[OPEN ISSUE: Should we require standards action for all profile IDs that would fit in 2 octets.]]
+
+## Template Keys
+
+This document requests that IANA open a new registry entitled "cTLS Template Keys", on the Transport Layer Security (TLS) Parameters page, with a "Specification Required" registration policy and the following initial contents:
+
+| Key                    | JSON Type    | Reference       |
+|:======================:|:============:|:================|
+| profile                | number       | (This document) |
+| version                | number       | (This document) |
+| cipherSuite            | string       | (This document) |
+| dhGroup                | string       | (This document) |
+| signatureAlgorithm     | string       | (This document) |
+| random                 | number       | (This document) |
+| mutualAuth             | true/false   | (This document) |
+| extension_order        | object       | (This document) |
+| clientHelloExtensions  | object       | (This document) |
+| serverHelloExtensions  | object       | (This document) |
+| encryptedExtensions    | object       | (This document) |
+| certRequestExtensions  | object       | (This document) |
+| knownCertificates      | object       | (This document) |
+| finishedSize           | number       | (This document) |
+| optional               | object       | (This document) |
 
 --- back
 
@@ -590,7 +618,7 @@ Total        1158  232      22
 
 The following compression profile was used in this example:
 
-~~~~~
+~~~~~JSON
 {
   "profile": 1, 
   "version": 772,
@@ -607,12 +635,12 @@ The following compression profile was used in this example:
   },
   "mutualAuth": true, 
   "extension-order": {
-       "clientHelloExtensions": {
-          Key_share
-       },
-       "ServerHelloExtensions": {
-          Key_share
-       },
+       "clientHelloExtensions": [
+          "key_share"
+       ],
+       "ServerHelloExtensions": [
+          "key_share"
+       ],
   },
   
   "knownCertificates": {
