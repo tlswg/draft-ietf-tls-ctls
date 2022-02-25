@@ -183,9 +183,9 @@ consisting solely of this group.
 
 signatureAlgorithm (string):
 : specifies a single signature scheme to use for authentication. The
-group is listed by the code point name in {{RFC8446}}, Section 4.2.7.
-(e.g., ed25519). This implies a literal "signature_algorithms" extension
-consisting solely of this group.
+signature algorithm is listed by the code point name in {{RFC8446}},
+Section 4.2.3. (e.g., ecdsa_secp256r1_sha256). This implies a literal
+"signature_algorithms" extension consisting solely of this group.
 
 random (integer):
 : indicates that the ClientHello.Random and ServerHello.Random values
@@ -596,7 +596,7 @@ The following compression profile was used in this example:
   "version": 772,
   "cipherSuite": "TLS_AES_128_CCM_8_SHA256",
   "dhGroup": "X25519",
-  "signatureAlgorithm": "ECDSA_P256_SHA256",
+  "signatureAlgorithm": "ecdsa_secp256r1_sha256",
   "finishedSize": 8,
   "clientHelloExtensions": {
     "server_name": "000e00000b6578616d706c652e636f6d",
