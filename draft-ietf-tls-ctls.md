@@ -373,7 +373,7 @@ profile.
       struct {
           ContentType content_type = ctls_handshake;
           opaque profile_id<0..2^8-1>;
-          opaque fragment<0..V>;
+          opaque fragment<0..2^16-1>;
       } CTLSPlaintext;
 ~~~~
 
@@ -471,8 +471,8 @@ The cTLS ClientHello is defined as follows.
 
       struct {
           Random random;
-          CipherSuite cipher_suites<1..V>;
-          Extension extensions<1..V>;
+          CipherSuite cipher_suites<1..2^16-1>;
+          Extension extensions<1..2^16-1>;
       } ClientHello;
 ~~~~
 
@@ -484,7 +484,7 @@ We redefine ServerHello in the following way.
       struct {
           Random random;
           CipherSuite cipher_suite;
-          Extension extensions<1..V>;
+          Extension extensions<1..2^16-1>;
       } ServerHello;
 ~~~~
 
@@ -495,7 +495,7 @@ The HelloRetryRequest has the following format.
 ~~~~
       struct {
           CipherSuite cipher_suite;
-          Extension extensions<2..V>;
+          Extension extensions<2..2^16-1>;
       } HelloRetryRequest;
 ~~~~
 
