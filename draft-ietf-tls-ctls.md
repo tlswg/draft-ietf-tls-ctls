@@ -365,7 +365,9 @@ information and errors.  Alert messages are encrypted when possible due to
 the current connection state. Plaintext alert messages use the content type
 `ctls-alert`.
 
-For encrypted messages the outer content type is always `ctls` and the inner
+Unencrypted handshake records use the content type is always `ctls-handshake`.
+
+For encrypted messages the outer content type is set to `ctls` and the inner
 content type indicates the true content type.
 
 The `profile_id` field allows the client and server to agree on which
