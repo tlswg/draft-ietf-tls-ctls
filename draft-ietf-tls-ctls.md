@@ -356,11 +356,17 @@ other than 0x30, since every X.509 certificate starts with this byte.
 
 ## Record Layer
 
-The only cTLS records that are sent in plaintext are handshake records
-(ClientHello and ServerHello/HRR).  The content type is therefore constant (it
-is always `handshake`), so we instead set the `content_type` field to a fixed
-cTLS-specific value to distinguish cTLS plaintext records from encrypted
-records, TLS/DTLS records, and other protocols using the same 5-tuple.
+cTLS records that are sent in plaintext are handshake records (ClientHello 
+and ServerHello/HRR) and alert messages before a security context has been 
+established.
+
+cTLS uses alert messages like TLS 1.3 does. Alert messages indicate closure 
+information and errors.  Alert messages are encrypted when possible due to 
+the current connection state. Plaintext alert messages use the content type
+`ctls-alert`.
+
+For encrypted messages the outer content type is always `ctls` and the inner
+content type indicates the true content type.
 
 The `profile_id` field allows the client and server to agree on which
 compression profile should be used for this session (see
@@ -553,9 +559,10 @@ This document requests that a code point be allocated from the "TLS ContentType
 registry.  This value must be in the range 0-31 (inclusive).  The row to be
 added in the registry has the following form:
 
-| Value | Description | DTLS-OK | Reference |
-|:=====:|:============|:========|:==========|
-|  TBD  | ctls        | N       | RFCXXXX   |
+| Value | Description           | DTLS-OK | Reference |
+|:=====:|:======================|:========|:==========|
+|  TBD  | ctls                  | N       | RFCXXXX   |
+|  TBD  | ctls_alert            | N       | RFCXXXX   |
 
 [[ RFC EDITOR: Please replace the value TBD with the value assigned by IANA, and
 the value XXXX to the RFC number assigned for this document. ]]
