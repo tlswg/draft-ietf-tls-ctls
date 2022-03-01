@@ -562,6 +562,7 @@ added in the registry has the following form:
 | Value | Description           | DTLS-OK | Reference |
 |:=====:|:======================|:========|:==========|
 |  TBD  | ctls                  | N       | RFCXXXX   |
+|  TBD  | ctls_handshake        | N       | RFCXXXX   |
 |  TBD  | ctls_alert            | N       | RFCXXXX   |
 
 [[ RFC EDITOR: Please replace the value TBD with the value assigned by IANA, and
