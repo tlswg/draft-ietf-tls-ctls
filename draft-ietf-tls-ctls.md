@@ -167,6 +167,10 @@ single-valued list with the specified value. The supported_versions extension is
 omitted from ClientHello.extensions and reconstructed in the transcript with the
 specified value.
 
+suppressSequenceNumber (boolean):
+: If present and set to true, the sequence number field is omitted 
+from encrypted record headers.
+
 cipherSuite (string):
 : indicates that both sides agree to
 the single named cipher suite, using the "TLS_AEAD_HASH" syntax
@@ -419,7 +423,7 @@ transports length information may be inferred from the underlying layer.
 
 Normal DTLS does not provide a mechanism for suppressing the sequence number
 field entirely.  In cases where a sequence number is not required (e.g., when a
-reliable transport is in use), a cTLS implementation may suppress it by setting
+reliable transport is in use), a cTLS implementation MUST suppress it by setting
 the `suppressSequenceNumber` flag in the compression profile being used (see
 {{template-based-specialization}}).  When this flag is enabled, the S bit in the
 configuration octet MUST be cleared.
