@@ -418,14 +418,14 @@ As with DTLS, the length field MAY be omitted by clearing the L bit, which means
 that the record consumes the entire rest of the data in the lower level
 transport.  In this case it is not possible to have multiple DTLSCiphertext
 format records without length fields in the same datagram.  In stream-oriented
-transports (e.g., TCP), the length field MUST be present. For use over other 
-transports length information may be inferred from the underlying layer. 
+transports (e.g., TCP), the length field MUST be present. For use over other
+transports length information may be inferred from the underlying layer.
 
 Normal DTLS does not provide a mechanism for suppressing the sequence number
 field entirely.  When cTLS is used on top of a reliable transport, sequence
-numbers are suppressed and the `suppressSequenceNumber` flag in the compression
-profile is set (see {{template-based-specialization}}).  Consequently, the 
-the S bit MUST be cleared.
+numbers MUST be suppressed and the `suppressSequenceNumber` flag in the
+compression profile is set (see {{template-based-specialization}}).
+Consequently, the the S bit MUST be cleared.
 
 
 ## Handshake Layer
