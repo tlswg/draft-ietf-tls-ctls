@@ -363,7 +363,7 @@ established.
 cTLS uses alert messages like TLS 1.3 does. Alert messages indicate closure 
 information and errors.  Alert messages are encrypted when possible due to 
 the current connection state. Plaintext alert messages use the content type
-`ctls-alert`.
+`ctls_alert`.
 
 Unencrypted handshake records use the content type is always `ctls_handshake`.
 
