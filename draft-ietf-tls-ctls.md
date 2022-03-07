@@ -374,7 +374,8 @@ what compression profile to use. For a ServerHello this field is not required.
 Should we make this field optional?]]
 
 Encrypted records use DTLS 1.3 record framing, comprising a configuration octet
-followed by optional connection ID, sequence number, and length fields.    
+followed by optional connection ID, sequence number, and length fields. The
+encryption process and additional data are also as described in DTLS.
 
 ~~~~
       0 1 2 3 4 5 6 7
