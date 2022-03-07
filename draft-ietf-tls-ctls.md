@@ -357,10 +357,11 @@ other than 0x30, since every X.509 certificate starts with this byte.
 ## Record Layer
 
 The only cTLS records that are sent in plaintext are handshake records
-(ClientHello and ServerHello/HRR).  The content type is therefore constant (it
-is always `handshake`), so we instead set the `content_type` field to a fixed
-cTLS-specific value to distinguish cTLS plaintext records from encrypted
-records, TLS/DTLS records, and other protocols using the same 5-tuple.
+(ClientHello and ServerHello/HRR) and alerts. cTLS alerts are the same
+as TLS alerts and use the same content types.  For handshake records,
+we set the `content_type` field to a fixed cTLS-specific value to
+distinguish cTLS plaintext records from encrypted records, TLS/DTLS
+records, and other protocols using the same 5-tuple.
 
 ~~~~
       struct {
