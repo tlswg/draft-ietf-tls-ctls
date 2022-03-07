@@ -472,7 +472,7 @@ The cTLS ClientHello is defined as follows.
 The client uses the `profile_id` field to inform the server
 about the compression profile being used (see
 {{template-based-specialization}}).  This field MUST be set to
-zero if and only if no compression profile is used.  Non-zero
+a zero-length value and only if no compression profile is used.  Non-zero
 values are agreed out of band between the client and server,
 as part of the specification of the compression profile.
 
