@@ -362,17 +362,9 @@ is always `handshake`), so we instead set the `content_type` field to a fixed
 cTLS-specific value to distinguish cTLS plaintext records from encrypted
 records, TLS/DTLS records, and other protocols using the same 5-tuple.
 
-The `profile_id` field allows the client and server to agree on which
-compression profile should be used for this session (see
-{{template-based-specialization}}).  This field MUST be set to zero if and only
-if no compression profile is used.  Non-zero values are negotiated out of band
-between the client and server, as part of the specification of the compression
-profile.
-
 ~~~~
       struct {
           ContentType content_type = ctls_handshake;
-          opaque profile_id<0..2^8-1>;
           opaque fragment<0..2^16-1>;
       } CTLSPlaintext;
 ~~~~
@@ -470,11 +462,21 @@ The cTLS ClientHello is defined as follows.
       opaque Random[RandomLength];      // variable length
 
       struct {
+          opaque profile_id<0..2^8-1>;
           Random random;
           CipherSuite cipher_suites<1..2^16-1>;
           Extension extensions<1..2^16-1>;
       } ClientHello;
 ~~~~
+
+The client uses the `profile_id` field to inform the server
+about the compression profile being used (see
+{{template-based-specialization}}).  This field MUST be set to
+a zero-length value and only if no compression profile is used.  Non zero-length
+values are agreed out of band between the client and server,
+as part of the specification of the compression profile.
+
+
 
 ## ServerHello
 
