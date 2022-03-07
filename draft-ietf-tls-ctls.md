@@ -410,7 +410,7 @@ transports (e.g., TCP), the length field MUST be present. For use over other
 transports length information may be inferred from the underlying layer. 
 
 Normal DTLS does not provide a mechanism for suppressing the sequence number
-field entirely. When a reliable transport (e.g., TCP) is in use, the
+field entirely. When a reliable, ordered transport (e.g., TCP) is in use, the
 S bit in the configuration octet MUST be cleared and the sequence number
 MUST be omitted. When an unreliable transport is in use, the S bit
 has its usual meaning and the sequence number MUST be included.
