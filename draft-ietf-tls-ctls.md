@@ -257,8 +257,9 @@ https://mailarchive.ietf.org/arch/msg/tls/TugB5ddJu3nYg7chcyeIyUqWSbA.]]
 
 optional (object):
 : contains keys that are not required to be understood by the client.
-The server MUST be able to accept connections that do or do not use any of
-these keys.  A key MUST NOT appear in both the main template and the optional
+Server operators MUST NOT place a key in this section unless the server is
+able to determine whether the key is in use based on the client data it
+receives. A key MUST NOT appear in both the main template and the optional
 section.
 
 ### Requirements on TLS Implementations
