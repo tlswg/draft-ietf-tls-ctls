@@ -373,7 +373,7 @@ records, TLS/DTLS records, and other protocols using the same 5-tuple.
 what compression profile to use. For a ServerHello this field is not required. 
 Should we make this field optional?]]
 
-Encrypted records use DTLS 1.3 record framing, comprising a configuration octet
+Encrypted records use DTLS {{!I-D.draft-ietf-tls-dtls}} 1.3 record framing, comprising a configuration octet
 followed by optional connection ID, sequence number, and length fields. The
 encryption process and additional data are also as described in DTLS.
 
