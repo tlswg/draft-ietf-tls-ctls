@@ -681,4 +681,4 @@ Client Flight: 80 bytes = SIG(64) + MAC(8) + CERTID(1) + Overhead(7)
 # Acknowledgments
 {:numbered="false"}
 
-We would like to thank Karthikeyan Bhargavan, Owen Friel, Sean Turner, Martin Thomson and Chris Wood.
+We would like to thank Karthikeyan Bhargavan, Owen Friel, Sean Turner, Benjamin Schwartz, Martin Thomson, and Chris Wood.
