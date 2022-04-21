@@ -159,7 +159,7 @@ The following elements are defined:
 profile (string):
 : identifies the profile being defined (default: ""). If present, this key MUST
 contain a hex-encoded sequence of 0-255 bytes (the "profile ID"). IDs whose
-decoded length is 4 bytes or less are reserved (see {{reserved-templates}}). When a
+decoded length is 4 bytes or less are reserved (see {{reserved-profiles}}). When a
 reserved value is used (including the default value), other keys MUST NOT appear
 in the template, and a client MUST NOT accept the template unless it recognizes
 the ID.
@@ -382,7 +382,7 @@ records, and other protocols using the same 5-tuple.
       } CTLSPlaintext;
 ~~~~
 
-Encrypted records use DTLS {{!I-D.draft-ietf-tls-dtls}} 1.3 record framing, comprising a configuration octet
+Encrypted records use DTLS {{!I-D.ietf-tls-dtls13}} 1.3 record framing, comprising a configuration octet
 followed by optional connection ID, sequence number, and length fields. The
 encryption process and additional data are also as described in DTLS.
 
@@ -601,14 +601,16 @@ with the following columns:
 * Note: An explanation or reference.
 
 The ID value of length 1 are subject to a "Standards Action" registry
-policy. Values of length 2 are subject to an "RFC Required" policy. Other
-values are subject to a "First Come First Served" policy.
+policy. Values of length 2 are subject to an "RFC Required" policy. Values
+of length 3 and 4 are subject to a "First Come First Served" policy. Values
+longer than 4 octets are not subject to registration and MUST NOT appear
+in this registry.
 
 The initial registry contents are:
 
-| ID value  | Template         | Note          |
-|:=========:|:================:|:=============:|
-| 0x00      | {"version": 772} | cTLS 1.3-only |
+| ID value  | Template           | Note          |
+|:=========:|:==================:|:=============:|
+| `[0x00]`  | `{"version": 772}` | cTLS 1.3-only |
 
 --- back
 
