@@ -256,6 +256,14 @@ Finished value is filled in by the receiving side.
 > for more on this, as well as
 > https://mailarchive.ietf.org/arch/msg/tls/TugB5ddJu3nYg7chcyeIyUqWSbA.
 
+handshakeFraming (boolean):
+: If true, handshake messages MUST be conveyed inside a `Handshake`
+({{!RFC8446, Section 4}}) struct on stream transports, or a
+`DTLSHandshake` ({{!RFC9147, Section 5.2}}) struct on datagram transports,
+and MAY be broken into multiple records as in TLS and DTLS.  Otherwise,
+each handshake message is conveyed in a `CTLSHandshake` struct
+({{ctlshandshake}}), which MUST be the payload of a single record.
+
 optional (object):
 : contains keys that are not required to be understood by the client.
 Server operators MUST NOT place a key in this section unless the server is
@@ -425,23 +433,26 @@ MUST be omitted. When an unreliable transport is in use, the S bit
 has its usual meaning and the sequence number MUST be included.
 
 
-## Handshake Layer
+## cTLS Handshake Layer {#ctlshandshake}
 
-The cTLS handshake framing is same as the TLS 1.3 handshake
-framing, except for two changes:
+When `template.handshakeFraming` is not `true`, cTLS uses a custom handshake
+framing that saves space by relying on the record layer for message lengths.
+(This saves 3 bytes per message compared to TLS, or 11 bytes compared to DTLS.)
+This compact framing is defined by the `CTLSHandshake` struct.
 
-* The length field is omitted.
-
-* The HelloRetryRequest message is a true handshake message
-  instead of a specialization of ServerHello.
+Any handshake type registered in the IANA TLS HandshakeType Registry can be
+conveyed in a `CTLSHandshake`, but not all messages are actually allowed on
+a given connection.  This definition shows the messages types supported in
+`CTLSHandshake` as of TLS 1.3 and DTLS 1.3, but any future message types
+are also permitted.
 
 ~~~~
       struct {
           HandshakeType msg_type;    /* handshake type */
-          select (Handshake.msg_type) {
+          select (CTLSHandshake.msg_type) {
               case client_hello:          ClientHello;
               case server_hello:          ServerHello;
-              case hello_retry_request:   HelloRetryRequest;
+              case hello_retry_request:   HelloRetryRequest;  /* New */
               case end_of_early_data:     EndOfEarlyData;
               case encrypted_extensions:  EncryptedExtensions;
               case certificate_request:   CertificateRequest;
@@ -450,15 +461,23 @@ framing, except for two changes:
               case finished:              Finished;
               case new_session_ticket:    NewSessionTicket;
               case key_update:            KeyUpdate;
+              case request_connection_id: RequestConnectionId;
+              case new_connection_id:     NewConnectionId;
           };
-      } Handshake;
+      } CTLSHandshake;
 ~~~~
 
+Each `CTLSHandshake` MUST be conveyed as a single `CTLSPlaintext.fragment`
+or `CTLSCiphertext.encrypted_record`, and is therefore limited to a maximum
+length of `2^16-1`.  When operating over UDP, large `CTLSHandshake` messages
+will also require the use of IP fragmentation, which is sometimes
+undesirable.  Operators can avoid these concerns by setting
+`template.handshakeFraming = true`.
 
 # Handshake Messages
 
 In general, we retain the basic structure of each individual
-TLS handshake message. However, the following handshake
+TLS or DTLS handshake message. However, the following handshake
 messages have been modified for space reduction and cleaned
 up to remove pre-TLS 1.3 baggage.
 
@@ -500,7 +519,9 @@ We redefine ServerHello in the following way.
 
 ## HelloRetryRequest
 
-The HelloRetryRequest has the following format.
+In cTLS, the HelloRetryRequest message is a true handshake message
+instead of a specialization of ServerHello.  The HelloRetryRequest has
+the following format.
 
 ~~~~
       struct {
@@ -595,6 +616,12 @@ This document requests that IANA open a new registry entitled "cTLS Template Key
 | knownCertificates      | object       | (This document) |
 | finishedSize           | number       | (This document) |
 | optional               | object       | (This document) |
+
+## Activating the HelloRetryRequest MessageType
+
+This document requests that IANA change the name of entry 6 in the TLS
+HandshakeType Registry from "hello_retry_request_RESERVED" to
+"hello_retry_request", and set its Reference field to this document.
 
 --- back
 
