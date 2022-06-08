@@ -195,17 +195,18 @@ anti-downgrade mechanism in {{RFC8446}}, Section 4.1.3 is disabled.
 IMPORTANT: Using short Random values can lead to potential
 attacks. The Random length MUST be less than or equal to 32 bytes.
 
-[[Open Issue: Karthik Bhargavan suggested the idea of hashing
-ephemeral public keys and to use the result (truncated to 32 bytes)
-as random values. Such a change would require a security analysis. ]]
+> OPEN ISSUE: Karthik Bhargavan suggested the idea of hashing
+> ephemeral public keys and to use the result (truncated to 32 bytes)
+> as random values. Such a change would require a security analysis.
 
 mutualAuth (boolean):
 : if set to true, indicates that the client must authenticate with
 a certificate by sending Certificate and a CertificateVerify message.
 The server MUST omit the CertificateRequest message, as its contents
 are redundant.
-[[OPEN ISSUE: We don't actually say that you can omit empty messages,
-so we need to add that somewhere.]]
+
+> OPEN ISSUE: We don't actually say that you can omit empty messages,
+so we need to add that somewhere.
 
 extension_order:
 : indicates in what order extensions appear in respective messages.
@@ -249,11 +250,11 @@ finishedSize (integer):
 length. When the transcript is reconstructed, the remainder of the
 Finished value is filled in by the receiving side.
 
-[[OPEN ISSUE: How short should we allow this to be? TLS 1.3 uses
-the native hash and TLS 1.2 used 12 bytes. More analysis is needed
-to know the minimum safe Finished size. See {{RFC8446}};
-Section E.1 for more on this, as well as
-https://mailarchive.ietf.org/arch/msg/tls/TugB5ddJu3nYg7chcyeIyUqWSbA.]]
+> OPEN ISSUE: How short should we allow this to be? TLS 1.3 uses
+> the native hash and TLS 1.2 used 12 bytes. More analysis is needed
+> to know the minimum safe Finished size. See {{RFC8446, Section E.1}}
+> for more on this, as well as
+> https://mailarchive.ietf.org/arch/msg/tls/TugB5ddJu3nYg7chcyeIyUqWSbA.
 
 optional (object):
 : contains keys that are not required to be understood by the client.
@@ -326,8 +327,8 @@ Note that the "version", "dhGroup", and "signatureAlgorithm" fields in the
 compression profile are specific instances of this algorithm for the
 corresponding extensions.
 
-[[OPEN ISSUE: Are there other extensions that would benefit from special
-treatment, as opposed to hex values.]]
+> OPEN ISSUE: Are there other extensions that would benefit from special
+treatment, as opposed to hex values.
 
 ### Known Certificates {#known-certs}
 
@@ -376,11 +377,11 @@ records, and other protocols using the same 5-tuple.
       } CTLSPlaintext;
 ~~~~
 
-[[OPEN ISSUE: The profile_id is needed in the ClientHello to inform the server
+> OPEN ISSUE: The profile_id is needed in the ClientHello to inform the server
 what compression profile to use. For a ServerHello this field is not required.
-Should we make this field optional?]]
+Should we make this field optional?
 
-Encrypted records use DTLS {{!I-D.draft-ietf-tls-dtls}} 1.3 record framing, comprising a configuration octet
+Encrypted records use DTLS 1.3 {{!RFC9147}} record framing, comprising a configuration octet
 followed by optional connection ID, sequence number, and length fields. The
 encryption process and additional data are also as described in DTLS.
 
@@ -538,7 +539,7 @@ else is ordinary TLS 1.3.
 Version 772 corresponds to the hex representation 0x0304, named group "29"
 (0x001D) represents X25519.
 
-[[OPEN ISSUE: Should we have a registry of well-known profiles?]]
+> OPEN ISSUE: Should we have a registry of well-known profiles?
 
 # Security Considerations
 
@@ -568,10 +569,10 @@ added in the registry has the following form:
 |  TBD  | ctls        | Y       | RFCXXXX   |
 |  TBD  | ctls_handshake | Y       | RFCXXXX   |
 
-[[ RFC EDITOR: Please replace the value TBD with the value assigned by IANA, and
-the value XXXX to the RFC number assigned for this document. ]]
+> RFC EDITOR: Please replace the value TBD with the value assigned by IANA, and
+the value XXXX to the RFC number assigned for this document.
 
-[[OPEN ISSUE: Should we require standards action for all profile IDs that would fit in 2 octets.]]
+> OPEN ISSUE: Should we require standards action for all profile IDs that would fit in 2 octets.
 
 ## Template Keys
 
