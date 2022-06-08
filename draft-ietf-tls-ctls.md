@@ -600,7 +600,7 @@ with the following columns:
 * Template: A JSON object.
 * Note: An explanation or reference.
 
-The ID value of length 1 are subject to a "Standards Action" registry
+The ID values of length 1 are subject to a "Standards Action" registry
 policy. Values of length 2 are subject to an "RFC Required" policy. Values
 of length 3 and 4 are subject to a "First Come First Served" policy. Values
 longer than 4 octets are not subject to registration and MUST NOT appear
