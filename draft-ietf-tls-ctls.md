@@ -42,9 +42,9 @@ informative:
 
 This document specifies a "compact" version of TLS 1.3. It is
 isomorphic to TLS 1.3 but saves space by trimming obsolete material,
-tighter encoding, a template-based specialization technique, and  
-alternative cryptographic techniques. cTLS is not directly interoperable with 
-TLS 1.3, but it should eventually be possible for a cTLS/TLS 1.3 server 
+tighter encoding, a template-based specialization technique, and
+alternative cryptographic techniques. cTLS is not directly interoperable with
+TLS 1.3, but it should eventually be possible for a cTLS/TLS 1.3 server
 to exist and successfully interoperate.
 
 --- middle
@@ -64,9 +64,9 @@ is achieved by five basic techniques:
 - Omitting the fields and handshake messages required for preserving backwards-compatibility
   with earlier TLS versions.
 - More compact encodings, for example point compression.
-- A template-based specialization mechanism that allows pre-populating information 
+- A template-based specialization mechanism that allows pre-populating information
   at both endpoints without the need for negotiation.
-- Alternative cryptographic techniques, such as semi-static Diffie-Hellman. 
+- Alternative cryptographic techniques, such as semi-static Diffie-Hellman.
 
 For the common (EC)DHE handshake with pre-established certificates, cTLS
 achieves an overhead of 45 bytes over the minimum required by the
@@ -88,21 +88,21 @@ when, and only when, they appear in all capitals, as shown here.
 Structure definitions listed below override TLS 1.3 definitions; any PDU
 not internally defined is taken from TLS 1.3.
 
-## Template-based Specialization 
- 
-A significant transmission overhead in TLS 1.3 is contributed to by two factors, 
+## Template-based Specialization
+
+A significant transmission overhead in TLS 1.3 is contributed to by two factors,
 :
-- the negotiation of algorithm parameters, and extensions,  as well as 
-- the exchange of certificates. 
+- the negotiation of algorithm parameters, and extensions,  as well as
+- the exchange of certificates.
 
-TLS 1.3 supports different credential types and modes that 
-are impacted differently by a compression scheme. For example, TLS supports 
-certificate-based authentication, raw public key-based authentication as well 
-as pre-shared key (PSK)-based authentication. PSK-based authentication can be 
-used with externally configured PSKs or with PSKs established through tickets. 
+TLS 1.3 supports different credential types and modes that
+are impacted differently by a compression scheme. For example, TLS supports
+certificate-based authentication, raw public key-based authentication as well
+as pre-shared key (PSK)-based authentication. PSK-based authentication can be
+used with externally configured PSKs or with PSKs established through tickets.
 
-The basic idea of template-based specialization is that we start with the basic 
-TLS 1.3 handshake, which is fully general and then remove degrees of freedom, 
+The basic idea of template-based specialization is that we start with the basic
+TLS 1.3 handshake, which is fully general and then remove degrees of freedom,
 eliding parts of the handshake which are used to express those degrees of
 freedom. For example, if we only support one version of TLS, then it
 is not necessary to have version negotiation and the
@@ -127,23 +127,23 @@ layer between the handshake and the record layer:
 ~~~~~
 
 By assuming that out-of-band agreements took place already prior to the start of
-the cTLS protocol exchange, the amount of data exchanged can be radically reduced. 
-Because different clients may use different compression templates and because multiple 
-compression templates may be available for use in different deployment environments, 
-a client needs to inform the server about the profile it is planning to use. The 
-profile field in the ClientHello serves this purpose. 
+the cTLS protocol exchange, the amount of data exchanged can be radically reduced.
+Because different clients may use different compression templates and because multiple
+compression templates may be available for use in different deployment environments,
+a client needs to inform the server about the profile it is planning to use. The
+profile field in the ClientHello serves this purpose.
 
 Although the template-based specialization mechanisms described here are general,
 we also include specific mechanism for certificate-based exchanges because those are
-where the most complexity and size reduction can be obtained. Most of the other exchanges in 
-TLS 1.3 are highly optimized and do not require compression to be used. 
+where the most complexity and size reduction can be obtained. Most of the other exchanges in
+TLS 1.3 are highly optimized and do not require compression to be used.
 
-The compression profile defining the use of algorithms, algorithm parameters, and 
+The compression profile defining the use of algorithms, algorithm parameters, and
 extensions is specified via a JSON dictionary.
 
-For example, the following specialization describes a protocol with a single fixed 
-version (TLS 1.3) and a single fixed cipher suite (TLS_AES_128_GCM_SHA256). On the 
-wire, ClientHello.cipher_suites, ServerHello.cipher_suites, and the 
+For example, the following specialization describes a protocol with a single fixed
+version (TLS 1.3) and a single fixed cipher suite (TLS_AES_128_GCM_SHA256). On the
+wire, ClientHello.cipher_suites, ServerHello.cipher_suites, and the
 supported_versions extensions in the ClientHello and ServerHello would be omitted.
 
 ~~~~JSON
@@ -153,10 +153,10 @@ supported_versions extensions in the ClientHello and ServerHello would be omitte
 }
 ~~~~
 
-The following elements are defined: 
+The following elements are defined:
 
-profile (integer): 
-: identifies the profile being defined. 
+profile (integer):
+: identifies the profile being defined.
 
 version (integer):
 : indicates that both sides agree to the
@@ -195,7 +195,7 @@ anti-downgrade mechanism in {{RFC8446}}, Section 4.1.3 is disabled.
 IMPORTANT: Using short Random values can lead to potential
 attacks. The Random length MUST be less than or equal to 32 bytes.
 
-[[Open Issue: Karthik Bhargavan suggested the idea of hashing 
+[[Open Issue: Karthik Bhargavan suggested the idea of hashing
 ephemeral public keys and to use the result (truncated to 32 bytes)
 as random values. Such a change would require a security analysis. ]]
 
@@ -207,12 +207,12 @@ are redundant.
 [[OPEN ISSUE: We don't actually say that you can omit empty messages,
 so we need to add that somewhere.]]
 
-extension_order: 
-: indicates in what order extensions appear in respective messages. 
-This allows to omit sending the type. If there is only a single 
+extension_order:
+: indicates in what order extensions appear in respective messages.
+This allows to omit sending the type. If there is only a single
 extension to be transmitted, then the extension length field can also
-be omitted. For example, imagine that only the KeyShare extension 
-needs to be sent in the ClientHello as the only extension. Then, 
+be omitted. For example, imagine that only the KeyShare extension
+needs to be sent in the ClientHello as the only extension. Then,
 the following structure
 
 ~~~
@@ -221,7 +221,7 @@ the following structure
      0024                // client_shares.length
        001d              // KeyShareEntry.group
        0020 a690...af948 // KeyShareEntry.key_exchange
-~~~       
+~~~
 
 is compressed down to (assuming the KeyShare group has been pre-agreed)
 
@@ -377,7 +377,7 @@ records, and other protocols using the same 5-tuple.
 ~~~~
 
 [[OPEN ISSUE: The profile_id is needed in the ClientHello to inform the server
-what compression profile to use. For a ServerHello this field is not required. 
+what compression profile to use. For a ServerHello this field is not required.
 Should we make this field optional?]]
 
 Encrypted records use DTLS {{!I-D.draft-ietf-tls-dtls}} 1.3 record framing, comprising a configuration octet
@@ -414,8 +414,8 @@ As with DTLS, the length field MAY be omitted by clearing the L bit, which means
 that the record consumes the entire rest of the data in the lower level
 transport.  In this case it is not possible to have multiple DTLSCiphertext
 format records without length fields in the same datagram.  In stream-oriented
-transports (e.g., TCP), the length field MUST be present. For use over other 
-transports length information may be inferred from the underlying layer. 
+transports (e.g., TCP), the length field MUST be present. For use over other
+transports length information may be inferred from the underlying layer.
 
 Normal DTLS does not provide a mechanism for suppressing the sequence number
 field entirely. When a reliable, ordered transport (e.g., TCP) is in use, the
@@ -429,7 +429,7 @@ has its usual meaning and the sequence number MUST be included.
 The cTLS handshake framing is same as the TLS 1.3 handshake
 framing, except for two changes:
 
-* The length field is omitted. 
+* The length field is omitted.
 
 * The HelloRetryRequest message is a true handshake message
   instead of a specialization of ServerHello.
@@ -508,7 +508,7 @@ The HelloRetryRequest has the following format.
       } HelloRetryRequest;
 ~~~~
 
-The HelloRetryRequest is the same as the ServerHello above 
+The HelloRetryRequest is the same as the ServerHello above
 but without the unnecessary sentinel Random value.
 
 
@@ -517,7 +517,7 @@ but without the unnecessary sentinel Random value.
 This section provides some example specializations.
 
 For this example we use TLS 1.3 only with AES_GCM,
-X25519, ALPN h2, short random values, and everything 
+X25519, ALPN h2, short random values, and everything
 else is ordinary TLS 1.3.
 
 ~~~~JSON
@@ -599,11 +599,11 @@ This document requests that IANA open a new registry entitled "cTLS Template Key
 
 # Example Exchange {#transcripts}
 
-The follow exchange illustrates a complete cTLS-based exchange supporting 
-mutual authentication using certificates. The digital signatures use ECDSA with SHA256 
-and NIST P256r1. The ephemeral Diffie-Hellman uses the FX25519 curve and 
-the exchange negotiates TLS-AES-128-CCM8-SHA256. 
-The certificates are exchanged using certificate identifiers. 
+The follow exchange illustrates a complete cTLS-based exchange supporting
+mutual authentication using certificates. The digital signatures use ECDSA with SHA256
+and NIST P256r1. The ephemeral Diffie-Hellman uses the FX25519 curve and
+the exchange negotiates TLS-AES-128-CCM8-SHA256.
+The certificates are exchanged using certificate identifiers.
 
 The resulting byte counts are as follows:
 
@@ -625,7 +625,7 @@ The following compression profile was used in this example:
 
 ~~~~~JSON
 {
-  "profile": 1, 
+  "profile": 1,
   "version": 772,
   "cipherSuite": "TLS_AES_128_CCM_8_SHA256",
   "dhGroup": "X25519",
@@ -635,10 +635,10 @@ The following compression profile was used in this example:
     "server_name": "000e00000b6578616d706c652e636f6d",
   },
   "certificateRequestExtensions": {
-    "certificate_request_context": 0, 
+    "certificate_request_context": 0,
     "signature_algorithms": "00020403"
   },
-  "mutualAuth": true, 
+  "mutualAuth": true,
   "extension-order": {
        "clientHelloExtensions": [
           "key_share"
@@ -647,12 +647,12 @@ The following compression profile was used in this example:
           "key_share"
        ],
   },
-  
+
   "knownCertificates": {
     "61": "3082...",
-    "62": "3082...", 
-    "63": "...", 
-    "64": "...", 
+    "62": "3082...",
+    "63": "...",
+    "64": "...",
     ...
   }
 }
@@ -676,8 +676,8 @@ ServerHello: 36 = DH(32) + Overhead(4)
 
 Server Flight: 80 = SIG(64) + MAC(8) + CERTID(1) + Overhead(7)
 
-The EncryptedExtensions, and the CertificateRequest messages 
-are omitted because they are empty. 
+The EncryptedExtensions, and the CertificateRequest messages
+are omitted because they are empty.
 
 ~~~
 0b                 // Certificate
@@ -688,7 +688,7 @@ are omitted because they are empty.
 0f                 // CertificateVerify
   4064             //   Signature.length
        3045...10ce //   Signature
-  
+
 14                 // Finished
   bfc9d66715bb2b04 //   VerifyData
 ~~~
