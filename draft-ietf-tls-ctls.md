@@ -615,6 +615,7 @@ This document requests that IANA open a new registry entitled "cTLS Template Key
 | certRequestExtensions  | object       | (This document) |
 | knownCertificates      | object       | (This document) |
 | finishedSize           | number       | (This document) |
+| handshakeFraming       | true/false   | (This document) |
 | optional               | object       | (This document) |
 
 ## Activating the HelloRetryRequest MessageType
