@@ -45,12 +45,12 @@ informative:
 
 --- abstract
 
-This document specifies a "compact" version of TLS 1.3. It is
-isomorphic to TLS 1.3 but saves space by trimming obsolete material,
+This document specifies a "compact" version of TLS and DTLS. It is
+equivalent to ordinary TLS, but saves space by trimming obsolete material,
 tighter encoding, a template-based specialization technique, and
 alternative cryptographic techniques. cTLS is not directly interoperable with
-TLS 1.3, but it should eventually be possible for a cTLS/TLS 1.3 server
-to exist and successfully interoperate.
+TLS or DTLS, but it should eventually be possible for a single server port
+to offer cTLS alongside TLS or DTLS.
 
 --- middle
 
@@ -60,8 +60,10 @@ DISCLAIMER: This is a work-in-progress draft of cTLS and has not yet
 seen significant security analysis, so could contain major errors. It
 should not be used as a basis for building production systems.
 
-This document specifies a "compact" version of TLS 1.3 {{!RFC8446}}. It is isomorphic
-to TLS 1.3 but designed to take up minimal bandwidth. The space reduction
+This document specifies "compact" versions of TLS {{!RFC8446}} and DTLS
+{{!RFC9147}}, respectively known as "Stream cTLS" and "Datagram cTLS".  cTLS
+provides equivalent security and functionality to TLS and DTLS, but it is
+designed to take up minimal bandwidth. The space reduction
 is achieved by five basic techniques:
 
 - Omitting unnecessary values that are a holdover from previous versions
@@ -73,15 +75,18 @@ is achieved by five basic techniques:
   at both endpoints without the need for negotiation.
 - Alternative cryptographic techniques, such as semi-static Diffie-Hellman.
 
-For the common (EC)DHE handshake with pre-established certificates, cTLS
+> OPEN ISSUE: Semi-static is never mentioned again.
+
+For the common (EC)DHE handshake with pre-established certificates, Stream cTLS
 achieves an overhead of 45 bytes over the minimum required by the
 cryptovariables.  For a PSK handshake, the overhead is 21 bytes.  Annotated
 handshake transcripts for these cases can be found in {{transcripts}}.
 
-Because cTLS is semantically equivalent to TLS, it can be viewed either
-as a related protocol or as a compression mechanism. Specifically, it
-can be implemented by a layer between the TLS handshake state
-machine and the record layer.
+> TODO: Update these values.
+
+cTLS supports the functionality of TLS and DTLS 1.3, and is forward-compatible
+to future versions of TLS and DTLS.  cTLS is not versioned independently in this
+specification.
 
 # Conventions and Definitions
 
@@ -113,23 +118,10 @@ freedom. For example, if we only support one version of TLS, then it
 is not necessary to have version negotiation and the
 supported_versions extension can be omitted.
 
-Importantly, this process is performed only for the wire encoding but
-not for the handshake transcript.  The result is that the transcript for a
-specialized cTLS handshake is the same as the transcript for a TLS 1.3 handshake
-with the same features used.
-
-One way of thinking of this is as if specialization is a stateful compression
-layer between the handshake and the record layer:
-
-~~~~~
-+---------------+---------------+---------------+
-|   Handshake   |  Application  |     Alert     |
-+---------------+---------------+---------------+    +---------+
-|               cTLS Compression Layer          |<---| Profile |
-+---------------+---------------+---------------+    +---------+
-|          cTLS Record Layer / Application      |
-+---------------+---------------+---------------+
-~~~~~
+Each specialization produces a new protocol that preserves the security guarantees
+of TLS, but has a unique handshake transcript.  This avoids any need to
+reconstruct a "classic" TLS handshake, but it does not support implementation
+as a compression layer external to the TLS library.
 
 By assuming that out-of-band agreements took place already prior to the start of
 the cTLS protocol exchange, the amount of data exchanged can be radically reduced.
@@ -144,7 +136,49 @@ where the most complexity and size reduction can be obtained. Most of the other 
 TLS 1.3 are highly optimized and do not require compression to be used.
 
 The compression profile defining the use of algorithms, algorithm parameters, and
-extensions is specified via a JSON dictionary.
+extensions is represented by the `CTLSTemplate` structure:
+
+~~~~
+enum {
+  profile(0),
+  version(1),
+  cipher_suite(2),
+  dh_group(3),
+  signature_algorithm(4),
+  random(5),
+  mutual_auth(6),
+  extension_order(7),
+  client_hello_extensions(8),
+  server_hello_extensions(9),
+  encrypted_extensions(10),
+  cert_request_extensions(11),
+  known_certificates(12),
+  finished_size(13),
+  optional(65535)
+} CTLSTemplateElementType;
+
+struct {
+  CTLSTemplateElementType type;
+  opaque data<0..2^32-1>;
+} CTLSTemplateElement;
+
+struct {
+  CTLSTemplateElement elements<0..2^32-1>
+} CTLSTemplate;
+~~~~
+
+Elements in a `CTLSTemplate` MUST appear in strictly ascending order.
+The initial elements are defined in the subsections below.  Future elements can be
+added via an IANA registry.  When generating a template, all elements are OPTIONAL
+to include.  When processing a template, all elements are mandatory
+to understand (but see discussion of `optional` in {{optional}}).
+
+For ease of configuration, an equivalent JSON dictionary format is also defined.
+It consists of a dictionary whose keys are the name of each element type (converted
+from snake_case to camelCase), and whose values are a type-specific representation
+of the element intended to maximize legibility.
+
+> OPEN ISSUE: Is it really worth converting snake_case to camelCase?  camelCase is slightly more traditional in JSON, and saves one byte, but it seems annoying to implement.
 
 For example, the following specialization describes a protocol with a single fixed
 version (TLS 1.3) and a single fixed cipher suite (TLS_AES_128_GCM_SHA256). On the
@@ -159,50 +193,72 @@ supported_versions extensions in the ClientHello and ServerHello would be omitte
 }
 ~~~~
 
-The following elements are defined:
+### Initial template elements
 
-profile (string):
-: identifies the profile being defined (default: ""). If present, this key MUST
-contain a hex-encoded sequence of 0-255 bytes (the "profile ID"). IDs whose
+#### `profile`
+
+This element identifies the profile being defined.  Its binary value is:
+
+~~~~
+opaque ProfileID<1..2^8-1>
+~~~~
+
+This encodes the profile ID, if one is specified.  IDs whose
 decoded length is 4 bytes or less are reserved (see {{reserved-profiles}}). When a
 reserved value is used (including the default value), other keys MUST NOT appear
 in the template, and a client MUST NOT accept the template unless it recognizes
 the ID.
 
-version (integer):
-: indicates that both sides agree to the
-single TLS version specified by the given integer value
-(772 == 0x0304 for TLS 1.3). The supported_versions extension
-is omitted from ClientHello.extensions and reconstructed in the transcript as a
-single-valued list with the specified value. The supported_versions extension is
-omitted from ClientHello.extensions and reconstructed in the transcript with the
-specified value.
+In JSON, the profile ID is represented as a hexadecimal-encoded string.
 
-cipherSuite (string):
-: indicates that both sides agree to
-the single named cipher suite, using the "TLS_AEAD_HASH" syntax
-defined in {{RFC8446}}, Section 8.4. The ClientHello.cipher_suites
-field is omitted and reconstructed in the transcript as a single-valued
-list with the specified value. The server_hello.cipher_suite field is
-omitted and reconstructed in the transcript as the specified value.
+#### `version`
 
-dhGroup (string):
-: specifies a single DH group to use for key establishment. The
-group is listed by the code point name in {{RFC8446}}, Section 4.2.7.
-(e.g., x25519). This implies a literal "supported_groups" extension
+Value: a single `ProtocolVersion` ({{!RFC8446, Section 4.1.2}}) that both parties agree to use. For TLS 1.3, the `ProtocolVersion` is 0x0304.
+
+When this element is included, the `supported_versions` extension
+is omitted from ClientHello.extensions, and the
+
+In JSON, the version is represented as an integer (772 = 0x0304 for TLS 1.3).
+
+#### `cipher_suite`
+
+Value: a single `CipherSuite` ({{!RFC8446, Section 4.1.2}}) that both parties agree to use.
+
+When this element is included, the `ClientHello.cipher_suites` and
+`ServerHello.cipher_suite` fields are omitted.
+
+In JSON, the cipher suite is represented using the "TLS_AEAD_HASH" syntax
+defined in {{RFC8446, Section 8.4}}.
+
+#### `dh_group`
+
+Value: a single `NamedGroup` ({{!RFC8446, Section 4.2.7}}) to use for key establishment.
+
+This is equivalent to a literal "supported_groups" extension
 consisting solely of this group.
 
-signatureAlgorithm (string):
-: specifies a single signature scheme to use for authentication. The
-signature algorithm is listed by the code point name in {{RFC8446}},
-Section 4.2.3. (e.g., ecdsa_secp256r1_sha256). This implies a literal
+In JSON, the group is listed by the code point name in {{RFC8446, Section B.3.1.4}}
+(e.g., x25519).
+
+#### `signature_algorithm`
+
+Value: a single `SignatureScheme` ({{!RFC8446, Section 4.2.3}}) to use for authentication.
+
+This is equivalent to a literal
 "signature_algorithms" extension consisting solely of this group.
 
-random (integer):
-: indicates that the ClientHello.Random and ServerHello.Random values
-are truncated to the given length. When the transcript is
-reconstructed, the Random is padded to the right with 0s and the
-anti-downgrade mechanism in {{RFC8446}}, Section 4.1.3 is disabled.
+In JSON, the
+signature algorithm is listed by the code point name in {{RFC8446,
+Section 4.2.3}}. (e.g., ecdsa_secp256r1_sha256).
+
+#### `random`
+
+Value: a single `uint8`.
+
+The `ClientHello.Random` and `ServerHello.Random` values
+are truncated to the given length. Where a 32-bit `Random` is
+required, the Random is padded to the right with 0s and the
+anti-downgrade mechanism in {{RFC8446, Section 4.1.3}} is disabled.
 IMPORTANT: Using short Random values can lead to potential
 attacks. The Random length MUST be less than or equal to 32 bytes.
 
@@ -210,8 +266,14 @@ attacks. The Random length MUST be less than or equal to 32 bytes.
 > ephemeral public keys and to use the result (truncated to 32 bytes)
 > as random values. Such a change would require a security analysis.
 
-mutualAuth (boolean):
-: if set to true, indicates that the client must authenticate with
+In JSON, the length is represented as an integer.
+
+#### `mutual_auth`
+
+Value: a single `uint8`, with 1 representing "true" and 0 representing
+"false".  All other values are forbidden.
+
+If set to true, this element indicates that the client must authenticate with
 a certificate by sending Certificate and a CertificateVerify message.
 The server MUST omit the CertificateRequest message, as its contents
 are redundant.
@@ -219,47 +281,51 @@ are redundant.
 > OPEN ISSUE: We don't actually say that you can omit empty messages,
 so we need to add that somewhere.
 
-extension_order:
-: indicates in what order extensions appear in respective messages.
-This allows to omit sending the type. If there is only a single
-extension to be transmitted, then the extension length field can also
-be omitted. For example, imagine that only the KeyShare extension
-needs to be sent in the ClientHello as the only extension. Then,
-the following structure
+In JSON, this value is represented as `true` or `false`.
 
-~~~
-   28                    // Extensions.length
-   33 26                 // KeyShare
-     0024                // client_shares.length
-       001d              // KeyShareEntry.group
-       0020 a690...af948 // KeyShareEntry.key_exchange
-~~~
+#### `client_hello_extensions`, `server_hello_extensions`, `encrypted_extensions`, and `cert_request_extensions`
 
-is compressed down to (assuming the KeyShare group has been pre-agreed)
+Value: a single `CTLSExtensionTemplate` struct:
 
-~~~
-   0020 a690...af948 // KeyShareEntry.key_exchange
-~~~
+~~~~
+struct {
+  Extension predefined_extensions<0..2^16-1>;
+  ExtensionType expected_extensions<0..2^16-1>;
+  uint8 allow_additional;
+} CTLSExtensionTemplate;
+~~~~
 
-clientHelloExtensions (predefined extensions):
-: Predefined ClientHello extensions, see {predefined-extensions}
+The `predefined_extension` field indicates extensions that should be treated
+as if they were included in the corresponding message.  This allows these
+extensions to be omitted entirely.
 
-serverHelloExtensions (predefined extensions):
-: Predefined ServerHello extensions, see {predefined-extensions}
+The `expected_extensions` field indicates extensions that must be included
+in the corresponding message, at the beginning of its `extensions` field.
+This allows to omit sending the type for those extensions, as well as the
+length if it is fixed.  E
 
-encryptedExtensions (predefined extensions):
-: Predefined EncryptedExtensions extensions, see {predefined-extensions}
+The `allow_additional` MUST be 0 (false) or 1 (true).  If true, more extensions may be included.  If false, the extension length field is also omitted.
 
-certRequestExtensions (predefined extensions):
-: Predefined CertificateRequest extensions, see {predefined-extensions}
+`predefined_extensions` and `expected_extensions` MUST be in strictly ascending
+order, and a single `ExtensionType` MUST NOT appear in both lists.  If the `version`, `dh_group`, or `signature_algorithm` element appears in the template, the
+corresponding `ExtensionType` MUST NOT appear here.
 
-knownCertificates (known certificates):
-: A compression dictionary for the Certificate message, see {known-certs}
+> OPEN ISSUE: Are there other extensions that would benefit from special
+treatment, as opposed to hex values.
 
-finishedSize (integer):
-: indicates that the Finished value is to be truncated to the given
-length. When the transcript is reconstructed, the remainder of the
-Finished value is filled in by the receiving side.
+In JSON, this value is represented as a dictionary with three keys:
+* `predefinedExtensions`: a dictionary mapping `ExtensionType` names ({{!RFC8446, Section 4.2}}) to values encoded as hexadecimal strings.
+* `expectedExtensions`: an array of `ExtensionType` names.
+* `allowAdditional`: `true` or `false`.
+
+If `predefinedExtensions` or `expectedExtensions` is empty, it MAY be omitted.
+
+> OPEN ISSUE: Should we have a `certificate_entry_extensions` element?
+
+#### `finished_size`
+
+Value: `uint8`, indicating that the Finished value is to be truncated to the given
+length.
 
 > OPEN ISSUE: How short should we allow this to be? TLS 1.3 uses
 > the native hash and TLS 1.2 used 12 bytes. More analysis is needed
@@ -267,98 +333,50 @@ Finished value is filled in by the receiving side.
 > for more on this, as well as
 > https://mailarchive.ietf.org/arch/msg/tls/TugB5ddJu3nYg7chcyeIyUqWSbA.
 
-handshakeFraming (boolean):
-: If true, handshake messages MUST be conveyed inside a `Handshake`
+In JSON, this length is represented as an integer.
+
+#### `handshake_framing`
+
+Value: `uint8`, with 0 indicating "false" and 1 indicating "true".
+If true, handshake messages MUST be conveyed inside a `Handshake`
 ({{!RFC8446, Section 4}}) struct on stream transports, or a
 `DTLSHandshake` ({{!RFC9147, Section 5.2}}) struct on datagram transports,
 and MAY be broken into multiple records as in TLS and DTLS.  Otherwise,
 each handshake message is conveyed in a `CTLSHandshake` struct
 ({{ctlshandshake}}), which MUST be the payload of a single record.
 
-optional (object):
-: contains keys that are not required to be understood by the client.
-Server operators MUST NOT place a key in this section unless the server is
-able to determine whether the key is in use based on the client data it
-receives. A key MUST NOT appear in both the main template and the optional
+In JSON, this value is represented as `true` or `false`.
+
+#### `optional`
+
+Value: a `CTLSTemplate` containing elements that are not required to be understood
+by the client.  Server operators MUST NOT place an element in this section unless
+the server is able to determine whether the client is using it from the client data
+it receives. A key MUST NOT appear in both the main template and the optional
 section.
 
-### Requirements on TLS Implementations
+In JSON, this value is represented in the same way as the `CTLSTemplate` itself.
 
-To be compatible with the specializations described in this section, a
-TLS stack needs to provide the following features:
+#### `known_certificates` {#known-certs}
 
-- If specialization of extensions is to be used, then the TLS stack MUST order
-each vector of Extension values in ascending order according to the
-ExtensionType.  This allows for a deterministic reconstruction of the extension
-list.
+Value: a `CertificateMap` struct:
 
-- If truncated Random values are to be used, then the TLS stack MUST be
-configurable to set the remaining bytes of the random values to zero.  This
-ensures that the reconstructed, padded random value matches the original.
+~~~
+struct {
+  opaque id<1..2^8-1>;
+  opaque cert_data<1..2^16-1>;
+} CertificateMapEntry;
 
-- If truncated Finished values are to be used, then the TLS stack MUST be
-configurable so that only the provided bytes of the Finished are verified,
-or so that the expected remaining values can be computed.
+struct {
+  CertificateMapEntry entries<2..2^24-1>;
+} CertificateMap;
+~~~
 
-### Predefined Extensions
+Entries in the certificate map must appear in strictly ascending lexicographic
+order by ID.
 
-Extensions used in the ClientHello, ServerHello, EncryptedExtensions, and
-CertificateRequest messages can be "predefined" in a compression profile, so
-that they do not have to be sent on the wire.  A predefined extensions object is
-a dictionary whose keys are extension names specified in the TLS
-ExtensionTypeRegistry specified in {{RFC8446}}.  The corresponding value is a
-hex-encoded value for the ExtensionData field of the extension.
-
-When compressing a handshake message, the sender compares the extensions in the
-message being compressed to the predefined extensions object, applying the
-following rules:
-
-* If the extensions list in the message is not sorted in ascending order by
-  extension type, it is an error, because the decompressed message will not
-  match.
-
-* If there is no entry in the predefined extensions object for the type of the
-  extension, then the extension is included in the compressed message
-
-* If there is an entry:
-
-    * If the ExtensionData of the extension does not match the value in the
-      dictionary, it is an error, because decompression will not produce the
-      correct result.
-
-    * If the ExtensionData matches, then the extension is removed, and not
-      included in the compressed message.
-
-When decompressing a handshake message the receiver reconstitutes the original
-extensions list using the predefined extensions:
-
-* If there is an extension in the compressed message with a type that exists in
-  the predefined extensions object, it is an error, because such an extension
-  would not have been sent by a sender with a compatible compression profile.
-
-* For each entry in the predefined extensions dictionary, an extension is added
-  to the decompressed message with the specified type and value.
-
-* The resulting vector of extensions MUST be sorted in ascending order by
-  extension type.
-
-Note that the "version", "dhGroup", and "signatureAlgorithm" fields in the
-compression profile are specific instances of this algorithm for the
-corresponding extensions.
-
-> OPEN ISSUE: Are there other extensions that would benefit from special
-treatment, as opposed to hex values.
-
-### Known Certificates {#known-certs}
-
-Certificates are a major contributor to the size of a TLS handshake.  In order
-to avoid this overhead when the parties to a handshake have already exchanged
-certificates, a compression profile can specify a dictionary of "known
-certificates" that effectively acts as a compression dictionary on certificates.
-
-A known certificates object is a JSON dictionary whose keys are strings containing
-hex-encoded compressed values.  The corresponding values are hex-encoded strings
-representing the uncompressed values.  For example:
+In JSON, `CertificateMap` is represented as a dictionary from `id` to `cert_data`,
+which are both represented as hexademical strings:
 
 ~~~~~JSON
 {
@@ -366,6 +384,11 @@ representing the uncompressed values.  For example:
   "01": "3082...",
 }
 ~~~~~
+
+Certificates are a major contributor to the size of a TLS handshake.  In order
+to avoid this overhead when the parties to a handshake have already exchanged
+certificates, a compression profile can specify a dictionary of "known
+certificates" that effectively acts as a compression dictionary on certificates.
 
 When compressing a Certificate message, the sender examines the cert_data field
 of each CertificateEntry.  If the cert_data matches a value in the known
@@ -380,11 +403,53 @@ mistaken for compressed one and erroneously decompressed.  For X.509, it is
 sufficient for the first byte of the compressed value (key) to have a value
 other than 0x30, since every X.509 certificate starts with this byte.
 
+### Static Vector compression
+
+When the cTLS template implies that a variable-length vector ({{!RFC8446, Section 3.4}}) has a fixed number of elements, that vector's length prefix is omitted.
+For example, suppose that the cTLS template is:
+
+~~~JSON
+{
+  "version": 772,
+  "dh_group": "x25519",
+  "client_hello_extensions": {
+    "expected_extensions": ["key_share"],
+    "allow_additional": false
+  }
+}
+~~~
+
+Then, the following structure:
+
+~~~
+   28                 // length(extensions)
+   33 26              // extension_type = KeyShare
+     0024             // length(client_shares)
+       001d           // KeyShareEntry.group
+       0020           // length(KeyShareEntry.key_exchange)
+         a690...af948 // KeyShareEntry.key_exchange
+~~~
+
+is compressed down to:
+
+~~~
+   a690...af948 // KeyShareEntry.key_exchange
+~~~
+
+according to the following rationale:
+:
+* The length of the `key_exchange` is omitted because the "x25519" key share has a fixed size (32 bytes).
+* `KeyShareEntry.group` is omitted because it is specified by `dh_group`
+* The length of `client_shares` is omitted because the use of `dh_group` implies that
+there can only be one `dh_group`.
+* `extension_type` is omitted because it is specified by `expected_extensions`
+* The length of `extensions` is omitted because `allow_additional` is false, the number of items in `extensions` (i.e., 1) is known in advance.
+
 ## Record Layer
 
 The only cTLS records that are sent in plaintext are handshake records
 (ClientHello and ServerHello/HRR) and alerts. cTLS alerts are the same
-as TLS alerts and use the same content types.  For handshake records,
+as TLS/DTLS alerts and use the same content types.  For handshake records,
 we set the `content_type` field to a fixed cTLS-specific value to
 distinguish cTLS plaintext records from encrypted records, TLS/DTLS
 records, and other protocols using the same 5-tuple.
@@ -439,10 +504,18 @@ S bit in the configuration octet MUST be cleared and the sequence number
 MUST be omitted. When an unreliable transport is in use, the S bit
 has its usual meaning and the sequence number MUST be included.
 
-
 ## cTLS Handshake Layer {#ctlshandshake}
 
-When `template.handshakeFraming` is not `true`, cTLS uses a custom handshake
+The cTLS handshake is modeled in three layers:
+
+1. The Transport layer
+2. The Transcript layer
+3. The Logical layer
+
+### The Transport layer
+
+When `template.handshake_framing` is false, the cTLS transport layer
+uses a custom handshake
 framing that saves space by relying on the record layer for message lengths.
 (This saves 3 bytes per message compared to TLS, or 11 bytes compared to DTLS.)
 This compact framing is defined by the `CTLSHandshake` struct.
@@ -479,7 +552,53 @@ or `CTLSCiphertext.encrypted_record`, and is therefore limited to a maximum
 length of `2^16-1`.  When operating over UDP, large `CTLSHandshake` messages
 will also require the use of IP fragmentation, which is sometimes
 undesirable.  Operators can avoid these concerns by setting
-`template.handshakeFraming = true`.
+`template.handshake_framing = 1`.
+
+#### Retransmission
+
+Like DTLS, Datagram cTLS requires a retransmission mechanism when operating over
+a lossy transport.  When `handshake_framing` is true, Datagram cTLS uses the same
+ACK and retransmission system as the corresponding version of DTLS.  However, when
+`template.handshake_framing` is false, retransmissions work slightly differently:
+:
+* `ACK.sequence_number` is computed as the number of messages in the handshake
+transcript since the last KeyUpdate, starting with the ClientHello at `sequence_number = 1`.
+* Retransmissions do not increment the `sequence_number`.
+* Each message type can only appear once from each sender in the handshake.  Recipients MUST ignore any duplicated messages.
+* Messages within a flight are placed in canonical order by the recipient.
+
+These rules are sufficient to ensure that the handshake terminates, and both parties
+agree on the sequence of messages that are received, even if some records are
+dropped or duplicated by the network.
+
+### The Transcript layer
+
+TLS and DTLS start the handshake with an empty transcript.  cTLS is different:
+it starts the transcript with a "virtual message" of type `ctls_template`
+containing the `CTLSTemplate` used for this connection.  This message is
+included in the transcript even though it is not exchanged during connection
+setup, in order to ensure that both parties are using the same template.
+Subsequent messages are appended to the transcript as usual.
+
+When computing the handshake transcript, all handshake messages are represented
+in TLS `Handshake` messages, as in DTLS 1.3 ({{!RFC9147, Section 5.2}}),
+regardless of `template.handshake_framing`.
+
+To ensure that all parties agree about what protocol is in use, the Cryptographic
+Label Prefix used for the handshake SHALL be "Sctls " for Stream cTLS and "Dctls "
+for Datagram cTLS.  (This is similar to the prefix substitution in {{Section 5.9 of !RFC9147}}).
+
+### The Logical layer
+
+The logical handshake layer consists of handshake messages that are reconstructed
+following the instructions in the template.  At this layer, predefined extensions
+are reintroduced, truncated Random values are extended, and all information is
+prepared to enable the cryptographic handshake and any import or export of
+key material and configuration.
+
+There is no obligation to reconstruct logical handshake messages in any specific
+format, and client and server do not need to agree on the precise representation
+of these messages, so long as they agree on their logical contents.
 
 # Handshake Messages
 
@@ -535,13 +654,14 @@ the following format.
 The HelloRetryRequest is the same as the ServerHello above
 but without the unnecessary sentinel Random value.
 
+> OPEN ISSUE: Does `server_hello_extensions` apply to `HelloRetryRequest`?
 
 # Examples
 
 This section provides some example specializations.
 
 For this example we use TLS 1.3 only with AES_GCM,
-X25519, ALPN h2, short random values, and everything
+x25519, ALPN h2, short random values, and everything
 else is ordinary TLS 1.3.
 
 ~~~~JSON
@@ -550,17 +670,17 @@ else is ordinary TLS 1.3.
    "version" : 772,
    "random": 16,
    "cipherSuite" : "TLS_AES_128_GCM_SHA256",
-   "dhGroup": "X25519",
+   "dhGroup": "x25519",
    "clientHelloExtensions": {
-      "named_groups": 29,
-      "application_layer_protocol_negotiation" : "030016832",
-      "..." : null
+      "predefinedExtensions": {
+          "application_layer_protocol_negotiation" : "030016832",
+      },
+      "allowAdditional": true
     }
 }
 ~~~~
 
-Version 772 corresponds to the hex representation 0x0304, named group "29"
-(0x001D) represents X25519.
+Version 772 corresponds to the hex representation 0x0304 (i.e. 1.3).
 
 # Security Considerations
 
@@ -599,6 +719,8 @@ the value XXXX to the RFC number assigned for this document.
 
 This document requests that IANA open a new registry entitled "cTLS Template Keys", on the Transport Layer Security (TLS) Parameters page, with a "Specification Required" registration policy and the following initial contents:
 
+FIXME: Need integers.
+
 | Key                    | JSON Type    | Reference       |
 |:======================:|:============:|:================|
 | profile                | string       | (This document) |
@@ -617,6 +739,16 @@ This document requests that IANA open a new registry entitled "cTLS Template Key
 | finishedSize           | number       | (This document) |
 | handshakeFraming       | true/false   | (This document) |
 | optional               | object       | (This document) |
+
+## Adding a cTLS Template message type
+
+IANA is requested to add the following entry to the TLS HandshakeType registry.
+
+* Value: TBD
+* Description: ctls_template
+* DTLS-OK: ??? Not clear what to put here.
+* Reference: (This document)
+* Comment: Virtual message used in cTLS.
 
 ## Activating the HelloRetryRequest MessageType
 
@@ -663,12 +795,12 @@ The resulting byte counts are as follows:
               ------------------
               TLS  CTLS  Overhead
               ---  ----  --------
-ClientHello   132   36       4
-ServerHello    90   36       4
-ServerFlight  478   80       7
-ClientFlight  458   80       7
+ClientHello   132   69       2
+ServerHello    90   64       2
+ServerFlight  478   73       5
+ClientFlight  458   73       5
 ==================================
-Total        1158  232      22
+Total        1158  279      14
 ~~~~~
 
 
@@ -679,26 +811,28 @@ The following compression profile was used in this example:
   "profile": "abcdef1234",
   "version": 772,
   "cipherSuite": "TLS_AES_128_CCM_8_SHA256",
-  "dhGroup": "X25519",
+  "dhGroup": "x25519",
   "signatureAlgorithm": "ecdsa_secp256r1_sha256",
   "finishedSize": 8,
   "clientHelloExtensions": {
-    "server_name": "000e00000b6578616d706c652e636f6d",
+    "predefinedExtensions": {
+      "server_name": "000e00000b6578616d706c652e636f6d"
+    },
+    "expectedExtensions": ["key_share"],
+    "allowAdditional": false
+  },
+  "serverHelloExtensions": {
+    "expectedExtensions": ["key_share"],
+    "allowAdditional": false
   },
   "certificateRequestExtensions": {
-    "certificate_request_context": 0,
-    "signature_algorithms": "00020403"
+    "predefinedExtensions": {
+      "certificate_request_context": "00",
+      "signature_algorithms": "00020403"
+    },
+    "allowAdditional": false
   },
   "mutualAuth": true,
-  "extension-order": {
-       "clientHelloExtensions": [
-          "key_share"
-       ],
-       "ServerHelloExtensions": [
-          "key_share"
-       ],
-  },
-
   "knownCertificates": {
     "61": "3082...",
     "62": "3082...",
@@ -709,25 +843,24 @@ The following compression profile was used in this example:
 }
 ~~~~~
 
-ClientHello: 73 bytes = Profile ID(5) + Random(32) + DH(32) + Overhead(4)
+ClientHello: 71 bytes = Profile ID(5) + Random(32) + DH(32) + Overhead(2)
 
 ~~~
 01                    // Handshake.msg_type = ClientHello
 05 abcdef1234         // ClientHello.profile_id
 5856a1...43168c130    // ClientHello.random
-0020 a690...af948     // KeyShareEntry.key_exchange
+a690...af948          // KeyShareEntry.key_exchange
 ~~~
 
-ServerHello: 68 bytes = Random(32) + DH(32) + Overhead(4)
+ServerHello: 65 bytes = Random(32) + DH(32) + Overhead(1)
 
 ~~~
 02                     // Handshake.msg_type = ServerHello
 cff4c0...684c859ca8    // ServerHello.random
-26                     // Extensions.length
-0020 9fbc...0f49       // KeyShareEntry.key_exchange
+9fbc...0f49            // KeyShareEntry.key_exchange
 ~~~
 
-Server Flight: 80 = SIG(64) + MAC(8) + CERTID(1) + Overhead(7)
+Server Flight: 78 = SIG(64) + MAC(8) + CERTID(1) + Overhead(5)
 
 The EncryptedExtensions, and the CertificateRequest messages
 are omitted because they are empty.
@@ -739,14 +872,13 @@ are omitted because they are empty.
       61           //       CertData = 'a'
 
 0f                 // CertificateVerify
-  4064             //   Signature.length
-       3045...10ce //   Signature
+  3045...10ce      //   signature
 
 14                 // Finished
   bfc9d66715bb2b04 //   VerifyData
 ~~~
 
-Client Flight: 80 bytes = SIG(64) + MAC(8) + CERTID(1) + Overhead(7)
+Client Flight: 78 bytes = SIG(64) + MAC(8) + CERTID(1) + Overhead(5)
 
 ~~~
 0b                 // Certificate
@@ -756,8 +888,7 @@ Client Flight: 80 bytes = SIG(64) + MAC(8) + CERTID(1) + Overhead(7)
 
 
 0f                 // CertificateVerify
-  4064             //   Signature.length
-       3045...f60e //   Signature
+  3045...f60e //   signature
 
 14                 // Finished
   35e9c34eec2c5dc1 //   VerifyData
@@ -767,4 +898,4 @@ Client Flight: 80 bytes = SIG(64) + MAC(8) + CERTID(1) + Overhead(7)
 # Acknowledgments
 {:numbered="false"}
 
-We would like to thank Karthikeyan Bhargavan, Owen Friel, Sean Turner, Benjamin Schwartz, Martin Thomson, and Chris Wood.
+We would like to thank Karthikeyan Bhargavan, Owen Friel, Sean Turner, Martin Thomson, and Chris Wood.
