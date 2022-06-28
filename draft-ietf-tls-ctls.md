@@ -147,7 +147,7 @@ enum {
   signature_algorithm(4),
   random(5),
   mutual_auth(6),
-  extension_order(7),
+  handshake_framing(7),
   client_hello_extensions(8),
   server_hello_extensions(9),
   encrypted_extensions(10),
@@ -166,6 +166,8 @@ struct {
   CTLSTemplateElement elements<0..2^32-1>
 } CTLSTemplate;
 ~~~~
+
+> TODO: Reorder enum.
 
 Elements in a `CTLSTemplate` MUST appear in strictly ascending order.
 The initial elements are defined in the subsections below.  Future elements can be
@@ -194,6 +196,8 @@ supported_versions extensions in the ClientHello and ServerHello would be omitte
 ~~~~
 
 ### Initial template elements
+
+> TODO: Reorder section.
 
 #### `profile`
 
