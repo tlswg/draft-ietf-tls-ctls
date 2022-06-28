@@ -171,7 +171,8 @@ struct {
 
 Elements in a `CTLSTemplate` MUST appear in strictly ascending order.
 The initial elements are defined in the subsections below.  Future elements can be
-added via an IANA registry.  When generating a template, all elements are OPTIONAL
+added via an IANA registry ({{template-keys}}).  When generating a
+template, all elements are OPTIONAL
 to include.  When processing a template, all elements are mandatory
 to understand (but see discussion of `optional` in {{optional}}).
 
@@ -725,26 +726,23 @@ the value XXXX to the RFC number assigned for this document.
 
 This document requests that IANA open a new registry entitled "cTLS Template Keys", on the Transport Layer Security (TLS) Parameters page, with a "Specification Required" registration policy and the following initial contents:
 
-FIXME: Need integers.
-
-| Key                    | JSON Type    | Reference       |
-|:======================:|:============:|:================|
-| profile                | string       | (This document) |
-| version                | number       | (This document) |
-| cipherSuite            | string       | (This document) |
-| dhGroup                | string       | (This document) |
-| signatureAlgorithm     | string       | (This document) |
-| random                 | number       | (This document) |
-| mutualAuth             | true/false   | (This document) |
-| extension_order        | object       | (This document) |
-| clientHelloExtensions  | object       | (This document) |
-| serverHelloExtensions  | object       | (This document) |
-| encryptedExtensions    | object       | (This document) |
-| certRequestExtensions  | object       | (This document) |
-| knownCertificates      | object       | (This document) |
-| finishedSize           | number       | (This document) |
-| handshakeFraming       | true/false   | (This document) |
-| optional               | object       | (This document) |
+| Name                    | Value    | Reference       |
+|:=======================:|:========:|:================|
+| profile                 | 0        | (This document) |
+| version                 | 1        | (This document) |
+| cipher_suite            | 2        | (This document) |
+| dh_group                | 3        | (This document) |
+| signature_algorithm     | 4        | (This document) |
+| random                  | 5        | (This document) |
+| mutual_auth             | 6        | (This document) |
+| handshake_framing       | 7        | (This document) |
+| client_hello_extensions | 8        | (This document) |
+| server_hello_extensions | 9        | (This document) |
+| encrypted_extensions    | 10       | (This document) |
+| cert_request_extensions | 11       | (This document) |
+| known_certificates      | 12       | (This document) |
+| finished_size           | 13       | (This document) |
+| optional                | 65535    | (This document) |
 
 ## Adding a cTLS Template message type
 
