@@ -445,6 +445,8 @@ there can only be one `dh_group`.
 * `extension_type` is omitted because it is specified by `expected_extensions`
 * The length of `extensions` is omitted because `allow_additional` is false, the number of items in `extensions` (i.e., 1) is known in advance.
 
+The only exception to this rule is `ClientHello.profile_id`, which is processed before the profile is known.
+
 ## Record Layer
 
 The only cTLS records that are sent in plaintext are handshake records
