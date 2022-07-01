@@ -266,8 +266,9 @@ handshakeFraming (boolean):
 ({{!RFC8446, Section 4}}) struct on stream transports, or a
 `DTLSHandshake` ({{!RFC9147, Section 5.2}}) struct on datagram transports,
 and MAY be broken into multiple records as in TLS and DTLS.  Otherwise,
-each handshake message is conveyed in a `CTLSHandshake` struct
-({{ctlshandshake}}), which MUST be the payload of a single record.
+each handshake message is conveyed in a `CTLSHandshake` or
+`CTLSDatagramHandshake` struct ({{ctlshandshake}}), which MUST be the payload
+of a single record.
 
 optional (object):
 : contains keys that are not required to be understood by the client.
@@ -386,13 +387,28 @@ records, and other protocols using the same 5-tuple.
 ~~~~
       struct {
           ContentType content_type = ctls_handshake;
+          opaque profile_id<0..2^8-1>;
           opaque fragment<0..2^16-1>;
-      } CTLSPlaintext;
+      } CTLSClientPlaintext;
 ~~~~
 
-> OPEN ISSUE: The profile_id is needed in the ClientHello to inform the server
-what compression profile to use. For a ServerHello this field is not required.
-Should we make this field optional?
+The client uses the `profile_id` field to inform the server
+about the compression profile being used (see
+{{template-based-specialization}}).  This field MUST be set to
+a zero-length value if and only if no compression profile is used.  All
+other values are agreed out of band between the client and server,
+as part of the specification of the compression profile, or are controlled
+by an IANA registry.
+
+The server's reply does not include the `profile_id`, because the server
+must be using the same profile indicated by the client.
+
+~~~~
+      struct {
+          ContentType content_type = ctls_handshake;
+          opaque fragment<0..2^16-1>;
+      } CTLSServerPlaintext;
+~~~~
 
 Encrypted records use DTLS 1.3 {{!RFC9147}} record framing, comprising a configuration octet
 followed by optional connection ID, sequence number, and length fields. The
@@ -442,14 +458,15 @@ has its usual meaning and the sequence number MUST be included.
 
 When `template.handshakeFraming` is not `true`, cTLS uses a custom handshake
 framing that saves space by relying on the record layer for message lengths.
-(This saves 3 bytes per message compared to TLS, or 11 bytes compared to DTLS.)
-This compact framing is defined by the `CTLSHandshake` struct.
+(This saves 3 bytes per message compared to TLS, or 9 bytes compared to DTLS.)
+This compact framing is defined by the `CTLSHandshake` and
+`CTLSDatagramHandshake` structs.
 
 Any handshake type registered in the IANA TLS HandshakeType Registry can be
-conveyed in a `CTLSHandshake`, but not all messages are actually allowed on
-a given connection.  This definition shows the messages types supported in
-`CTLSHandshake` as of TLS 1.3 and DTLS 1.3, but any future message types
-are also permitted.
+conveyed in a `CTLS[Datagram]Handshake`, but not all messages are actually
+allowed on a given connection.  This definition shows the messages types
+supported in `CTLSHandshake` as of TLS 1.3 and DTLS 1.3, but any future
+message types are also permitted.
 
 ~~~~
       struct {
@@ -470,12 +487,21 @@ are also permitted.
               case new_connection_id:     NewConnectionId;
           };
       } CTLSHandshake;
+
+      struct {
+          HandshakeType msg_type;    /* handshake type */
+          uint16 message_seq;        /* DTLS-required field */
+          select (CTLSDatagramHandshake.msg_type) {
+            ... /* same as CTLSHandshake */
+          };
+      } CTLSDatagramHandshake;
 ~~~~
 
-Each `CTLSHandshake` MUST be conveyed as a single `CTLSPlaintext.fragment`
-or `CTLSCiphertext.encrypted_record`, and is therefore limited to a maximum
-length of `2^16-1`.  When operating over UDP, large `CTLSHandshake` messages
-will also require the use of IP fragmentation, which is sometimes
+Each `CTLSHandshake` or `CTLSDatagramHandshake` MUST be conveyed as a single
+`CTLSClientPlaintext.fragment`, `CTLSServerPlaintext.fragment`, or
+`CTLSCiphertext.encrypted_record`, and is therefore limited to a maximum
+length of `2^16-1` or less.  When operating over UDP, large `CTLSHandshake`
+messages will also require the use of IP fragmentation, which is sometimes
 undesirable.  Operators can avoid these concerns by setting
 `template.handshakeFraming = true`.
 
@@ -494,21 +520,11 @@ The cTLS ClientHello is defined as follows.
       opaque Random[RandomLength];      // variable length
 
       struct {
-          opaque profile_id<0..2^8-1>;
           Random random;
           CipherSuite cipher_suites<1..2^16-1>;
           Extension extensions<1..2^16-1>;
       } ClientHello;
 ~~~~
-
-The client uses the `profile_id` field to inform the server
-about the compression profile being used (see
-{{template-based-specialization}}).  This field MUST be set to
-a zero-length value and only if no compression profile is used.  Non zero-length
-values are agreed out of band between the client and server,
-as part of the specification of the compression profile.
-
-
 
 ## ServerHello
 
