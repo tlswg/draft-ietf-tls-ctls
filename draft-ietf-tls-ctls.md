@@ -500,10 +500,10 @@ message types are also permitted.
 Each `CTLSHandshake` or `CTLSDatagramHandshake` MUST be conveyed as a single
 `CTLSClientPlaintext.fragment`, `CTLSServerPlaintext.fragment`, or
 `CTLSCiphertext.encrypted_record`, and is therefore limited to a maximum
-length of `2^16-1` or less.  When operating over UDP, large `CTLSHandshake`
-messages will also require the use of IP fragmentation, which is sometimes
-undesirable.  Operators can avoid these concerns by setting
-`template.handshakeFraming = true`.
+length of `2^16-1` or less.  When operating over UDP, large
+`CTLSDatagramHandshake` messages will also require the use of IP
+fragmentation, which is sometimes undesirable.  Operators can avoid these
+concerns by setting `template.handshakeFraming = true`.
 
 # Handshake Messages
 
