@@ -347,8 +347,9 @@ If true, handshake messages MUST be conveyed inside a `Handshake`
 ({{!RFC8446, Section 4}}) struct on stream transports, or a
 `DTLSHandshake` ({{!RFC9147, Section 5.2}}) struct on datagram transports,
 and MAY be broken into multiple records as in TLS and DTLS.  Otherwise,
-each handshake message is conveyed in a `CTLSHandshake` struct
-({{ctlshandshake}}), which MUST be the payload of a single record.
+each handshake message is conveyed in a `CTLSHandshake` or
+`CTLSDatagramHandshake` struct ({{ctlshandshake}}), which MUST be the payload
+of a single record.
 
 In JSON, this value is represented as `true` or `false`.
 
@@ -464,8 +465,21 @@ records, and other protocols using the same 5-tuple.
 ~~~~
       struct {
           ContentType content_type = ctls_handshake;
+          opaque profile_id<0..2^8-1>;
           opaque fragment<0..2^16-1>;
-      } CTLSPlaintext;
+      } CTLSClientPlaintext;
+~~~~
+
+The `profile_id` field MUST identify the profile that is in use. A
+zero-length ID corresponds to the cTLS default protocol.
+The server's reply does not include the `profile_id`, because the server
+must be using the same profile indicated by the client.
+
+~~~~
+      struct {
+          ContentType content_type = ctls_handshake;
+          opaque fragment<0..2^16-1>;
+      } CTLSServerPlaintext;
 ~~~~
 
 Encrypted records use DTLS 1.3 {{!RFC9147}} record framing, comprising a configuration octet
@@ -524,14 +538,15 @@ The cTLS handshake is modeled in three layers:
 When `template.handshake_framing` is false, the cTLS transport layer
 uses a custom handshake
 framing that saves space by relying on the record layer for message lengths.
-(This saves 3 bytes per message compared to TLS, or 11 bytes compared to DTLS.)
-This compact framing is defined by the `CTLSHandshake` struct.
+(This saves 3 bytes per message compared to TLS, or 9 bytes compared to DTLS.)
+This compact framing is defined by the `CTLSHandshake` and
+`CTLSDatagramHandshake` structs.
 
 Any handshake type registered in the IANA TLS HandshakeType Registry can be
-conveyed in a `CTLSHandshake`, but not all messages are actually allowed on
-a given connection.  This definition shows the messages types supported in
-`CTLSHandshake` as of TLS 1.3 and DTLS 1.3, but any future message types
-are also permitted.
+conveyed in a `CTLS[Datagram]Handshake`, but not all messages are actually
+allowed on a given connection.  This definition shows the messages types
+supported in `CTLSHandshake` as of TLS 1.3 and DTLS 1.3, but any future
+message types are also permitted.
 
 ~~~~
       struct {
@@ -552,31 +567,23 @@ are also permitted.
               case new_connection_id:     NewConnectionId;
           };
       } CTLSHandshake;
+
+      struct {
+          HandshakeType msg_type;    /* handshake type */
+          uint16 message_seq;        /* DTLS-required field */
+          select (CTLSDatagramHandshake.msg_type) {
+            ... /* same as CTLSHandshake */
+          };
+      } CTLSDatagramHandshake;
 ~~~~
 
-Each `CTLSHandshake` MUST be conveyed as a single `CTLSPlaintext.fragment`
-or `CTLSCiphertext.encrypted_record`, and is therefore limited to a maximum
-length of `2^16-1`.  When operating over UDP, large `CTLSHandshake` messages
-will also require the use of IP fragmentation, which is sometimes
-undesirable.  Operators can avoid these concerns by setting
-`template.handshake_framing = 1`.
-
-#### Retransmission
-
-Like DTLS, Datagram cTLS requires a retransmission mechanism when operating over
-a lossy transport.  When `handshake_framing` is true, Datagram cTLS uses the same
-ACK and retransmission system as the corresponding version of DTLS.  However, when
-`template.handshake_framing` is false, retransmissions work slightly differently:
-:
-* `ACK.sequence_number` is computed as the number of messages in the handshake
-transcript since the last KeyUpdate, starting with the ClientHello at `sequence_number = 1`.
-* Retransmissions do not increment the `sequence_number`.
-* Each message type can only appear once from each sender in the handshake.  Recipients MUST ignore any duplicated messages.
-* Messages within a flight are placed in canonical order by the recipient.
-
-These rules are sufficient to ensure that the handshake terminates, and both parties
-agree on the sequence of messages that are received, even if some records are
-dropped or duplicated by the network.
+Each `CTLSHandshake` or `CTLSDatagramHandshake` MUST be conveyed as a single
+`CTLSClientPlaintext.fragment`, `CTLSServerPlaintext.fragment`, or
+`CTLSCiphertext.encrypted_record`, and is therefore limited to a maximum
+length of `2^16-1` or less.  When operating over UDP, large
+`CTLSDatagramHandshake` messages will also require the use of IP
+fragmentation, which is sometimes undesirable.  Operators can avoid these
+concerns by setting `template.handshakeFraming = true`.
 
 ### The Transcript layer
 
@@ -622,16 +629,11 @@ The cTLS ClientHello is defined as follows.
       opaque Random[RandomLength];      // variable length
 
       struct {
-          opaque profile_id<0..2^8-1>;
           Random random;
           CipherSuite cipher_suites<1..2^16-1>;
           Extension extensions<1..2^16-1>;
       } ClientHello;
 ~~~~
-
-The `profile_id` field MUST identify the profile that is in use. A
-zero-length ID corresponds to the cTLS default protocol.
-
 
 ## ServerHello
 
