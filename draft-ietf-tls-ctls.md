@@ -45,8 +45,8 @@ informative:
 
 --- abstract
 
-This document specifies a "compact" version of TLS and DTLS. It is
-equivalent to ordinary TLS, but saves space by trimming obsolete material,
+This document specifies a "compact" version of TLS and DTLS. It is logically
+isomorphic to ordinary TLS, but saves space by trimming obsolete material,
 tighter encoding, a template-based specialization technique, and
 alternative cryptographic techniques. cTLS is not directly interoperable with
 TLS or DTLS, but it should eventually be possible for a single server port
@@ -75,7 +75,7 @@ is achieved by five basic techniques:
   at both endpoints without the need for negotiation.
 - Alternative cryptographic techniques, such as semi-static Diffie-Hellman.
 
-> OPEN ISSUE: Semi-static is never mentioned again.
+> OPEN ISSUE: Semi-static and point compression are never mentioned again.
 
 For the common (EC)DHE handshake with pre-established certificates, Stream cTLS
 achieves an overhead of 45 bytes over the minimum required by the
@@ -85,8 +85,8 @@ handshake transcripts for these cases can be found in {{transcripts}}.
 > TODO: Update these values.
 
 cTLS supports the functionality of TLS and DTLS 1.3, and is forward-compatible
-to future versions of TLS and DTLS.  cTLS is not versioned independently in this
-specification.
+to future versions of TLS and DTLS.  cTLS itself is versioned by
+`CTLSTemplate.version` (currently zero).
 
 # Conventions and Definitions
 
@@ -100,8 +100,8 @@ not internally defined is taken from TLS 1.3.
 
 ## Template-based Specialization
 
-A significant transmission overhead in TLS 1.3 is contributed to by two factors,
-:
+A significant transmission overhead in TLS 1.3 is contributed to by two factors:
+
 - the negotiation of algorithm parameters, and extensions,  as well as
 - the exchange of certificates.
 
@@ -116,12 +116,9 @@ TLS 1.3 handshake, which is fully general and then remove degrees of freedom,
 eliding parts of the handshake which are used to express those degrees of
 freedom. For example, if we only support one version of TLS, then it
 is not necessary to have version negotiation and the
-supported_versions extension can be omitted.
-
-Each specialization produces a new protocol that preserves the security guarantees
-of TLS, but has a unique handshake transcript.  This avoids any need to
-reconstruct a "classic" TLS handshake, but it does not support implementation
-as a compression layer external to the TLS library.
+supported_versions extension can be omitted.  Thus, each specialization
+produces a new protocol that preserves the security guarantees of TLS, but has
+its own unique handshake.
 
 By assuming that out-of-band agreements took place already prior to the start of
 the cTLS protocol exchange, the amount of data exchanged can be radically reduced.
@@ -163,23 +160,25 @@ struct {
 } CTLSTemplateElement;
 
 struct {
+  uint16 ctls_version = 0;
   CTLSTemplateElement elements<0..2^32-1>
 } CTLSTemplate;
 ~~~~
 
 > TODO: Reorder enum.
 
-Elements in a `CTLSTemplate` MUST appear in strictly ascending order.
-The initial elements are defined in the subsections below.  Future elements can be
-added via an IANA registry ({{template-keys}}).  When generating a
-template, all elements are OPTIONAL
-to include.  When processing a template, all elements are mandatory
-to understand (but see discussion of `optional` in {{optional}}).
+Elements in a `CTLSTemplate` MUST appear sorted by the type field in strictly
+ascending order.  The initial elements are defined in the subsections below.
+Future elements can be added via an IANA registry ({{template-keys}}).  When
+generating a template, all elements are OPTIONAL to include.  When processing
+a template, all elements are mandatory to understand (but see discussion of
+`optional` in {{optional}}).
 
 For ease of configuration, an equivalent JSON dictionary format is also defined.
 It consists of a dictionary whose keys are the name of each element type (converted
 from snake_case to camelCase), and whose values are a type-specific representation
-of the element intended to maximize legibility.
+of the element intended to maximize legibility.  The cTLS version is represented
+by the key "ctlsVersion", whose value is an integer, defaulting to 0 if omitted.
 
 > OPEN ISSUE: Is it really worth converting snake_case to camelCase?  camelCase is slightly more traditional in JSON, and saves one byte, but it seems annoying to implement.
 
@@ -190,6 +189,7 @@ supported_versions extensions in the ClientHello and ServerHello would be omitte
 
 ~~~~JSON
 {
+  "ctlsVersion": 0,
   "profile": "0001020304050607",
   "version": 772,
   "cipherSuite": "TLS_AES_128_GCM_SHA256"
@@ -221,7 +221,7 @@ In JSON, the profile ID is represented as a hexadecimal-encoded string.
 Value: a single `ProtocolVersion` ({{!RFC8446, Section 4.1.2}}) that both parties agree to use. For TLS 1.3, the `ProtocolVersion` is 0x0304.
 
 When this element is included, the `supported_versions` extension
-is omitted from ClientHello.extensions, and the
+is omitted from `ClientHello.extensions`.
 
 In JSON, the version is represented as an integer (772 = 0x0304 for TLS 1.3).
 
@@ -242,8 +242,13 @@ Value: a single `NamedGroup` ({{!RFC8446, Section 4.2.7}}) to use for key establ
 This is equivalent to a literal "supported_groups" extension
 consisting solely of this group.
 
-In JSON, the group is listed by the code point name in {{RFC8446, Section B.3.1.4}}
-(e.g., x25519).
+Static vectors (see {{static-vectors}}):
+
+* `KeyShareClientHello.client_shares`
+* `KeyShareEntry.key_exchange`, if the `NamedGroup` uses fixed-size key shares.
+
+In JSON, the group is listed by the code point name in {{RFC8446, Section 4.2.7}}
+(e.g., "x25519").
 
 #### `signature_algorithm`
 
@@ -261,7 +266,7 @@ Section 4.2.3}}. (e.g., ecdsa_secp256r1_sha256).
 Value: a single `uint8`.
 
 The `ClientHello.Random` and `ServerHello.Random` values
-are truncated to the given length. Where a 32-bit `Random` is
+are truncated to the given length.  Where a 32-byte `Random` is
 required, the Random is padded to the right with 0s and the
 anti-downgrade mechanism in {{RFC8446, Section 4.1.3}} is disabled.
 IMPORTANT: Using short Random values can lead to potential
@@ -300,25 +305,33 @@ struct {
 } CTLSExtensionTemplate;
 ~~~~
 
-The `predefined_extension` field indicates extensions that should be treated
+The `predefined_extensions` field indicates extensions that should be treated
 as if they were included in the corresponding message.  This allows these
 extensions to be omitted entirely.
 
 The `expected_extensions` field indicates extensions that must be included
 in the corresponding message, at the beginning of its `extensions` field.
-This allows to omit sending the type for those extensions, as well as the
-length if it is fixed.  E
+The types of these extensions are omitted when serializing the `extensions`
+field of the corresponding message.
 
-The `allow_additional` MUST be 0 (false) or 1 (true).  If true, more extensions may be included.  If false, the extension length field is also omitted.
+The `allow_additional` field MUST be 0 (false) or 1 (true), indicating whether
+additional extensions are allowed here.
 
 `predefined_extensions` and `expected_extensions` MUST be in strictly ascending
-order, and a single `ExtensionType` MUST NOT appear in both lists.  If the `version`, `dh_group`, or `signature_algorithm` element appears in the template, the
-corresponding `ExtensionType` MUST NOT appear here.
+order by `ExtensionType`, and a single `ExtensionType` MUST NOT appear in both
+lists.  If the `version`, `dh_group`, or `signature_algorithm` element appears
+in the template, the corresponding `ExtensionType` MUST NOT appear here.
 
 > OPEN ISSUE: Are there other extensions that would benefit from special
 treatment, as opposed to hex values.
 
+Static vectors (see {{static-vectors}}):
+
+* `Extension.extension_data` for any extension in `expected_extensions` whose value has fixed length.  This applies only to the corresponding message.
+* The `extensions` field of the corresponding message, if `allow_additional` is false.
+
 In JSON, this value is represented as a dictionary with three keys:
+
 * `predefinedExtensions`: a dictionary mapping `ExtensionType` names ({{!RFC8446, Section 4.2}}) to values encoded as hexadecimal strings.
 * `expectedExtensions`: an array of `ExtensionType` names.
 * `allowAdditional`: `true` or `false`.
@@ -409,18 +422,23 @@ mistaken for compressed one and erroneously decompressed.  For X.509, it is
 sufficient for the first byte of the compressed value (key) to have a value
 other than 0x30, since every X.509 certificate starts with this byte.
 
-### Static Vector compression
+### Static vector compression {#static-vectors}
 
-When the cTLS template implies that a variable-length vector ({{!RFC8446, Section 3.4}}) has a fixed number of elements, that vector's length prefix is omitted.
+Some cTLS template elements imply that certain vectors (as defined in {{!RFC8446,
+Section 3.4}}) have a fixed number of elements during the handshake.  These
+template elements note these "static vectors" in their definition.  When encoding
+a "static vector", its length prefix is omitted.
+
 For example, suppose that the cTLS template is:
 
 ~~~JSON
 {
+  "ctlsVersion": 0,
   "version": 772,
-  "dh_group": "x25519",
-  "client_hello_extensions": {
-    "expected_extensions": ["key_share"],
-    "allow_additional": false
+  "dhGroup": "x25519",
+  "clientHelloExtensions": {
+    "expectedExtensions": ["key_share"],
+    "allowAdditional": false
   }
 }
 ~~~
@@ -443,15 +461,15 @@ is compressed down to:
 ~~~
 
 according to the following rationale:
-:
-* The length of the `key_exchange` is omitted because the "x25519" key share has a fixed size (32 bytes).
-* `KeyShareEntry.group` is omitted because it is specified by `dh_group`
-* The length of `client_shares` is omitted because the use of `dh_group` implies that
-there can only be one `dh_group`.
-* `extension_type` is omitted because it is specified by `expected_extensions`
-* The length of `extensions` is omitted because `allow_additional` is false, the number of items in `extensions` (i.e., 1) is known in advance.
 
-The only exception to this rule is `ClientHello.profile_id`, which is processed before the profile is known.
+* The length of `extensions` is omitted because `allowAdditional` is false, so
+  the number of items in `extensions` (i.e., 1) is known in advance.
+* `extension_type` is omitted because it is specified by `expected_extensions`.
+* The length of `client_shares` is omitted because the use of `dhGroup` implies
+  that there can only be one `KeyShareEntry`.
+* `KeyShareEntry.group` is omitted because it is specified by `dhGroup`.
+* The length of the `key_exchange` is omitted because the "x25519" key share
+  has a fixed size (32 bytes).
 
 ## Record Layer
 
@@ -588,11 +606,12 @@ concerns by setting `template.handshakeFraming = true`.
 ### The Transcript layer
 
 TLS and DTLS start the handshake with an empty transcript.  cTLS is different:
-it starts the transcript with a "virtual message" of type `ctls_template`
-containing the `CTLSTemplate` used for this connection.  This message is
-included in the transcript even though it is not exchanged during connection
-setup, in order to ensure that both parties are using the same template.
-Subsequent messages are appended to the transcript as usual.
+it starts the transcript with a "virtual message" whose HandshakeType is
+`ctls_template` ({{template-handshaketype}}) containing the `CTLSTemplate` used
+for this connection.  This message is included in the transcript even though it
+is not exchanged during connection setup, in order to ensure that both parties
+are using the same template.  Subsequent messages are appended to the transcript
+as usual.
 
 When computing the handshake transcript, all handshake messages are represented
 in TLS `Handshake` messages, as in DTLS 1.3 ({{!RFC9147, Section 5.2}}),
@@ -675,6 +694,7 @@ else is ordinary TLS 1.3.
 
 ~~~~JSON
 {
+   "ctlsVersion": 0,
    "profile": "0504030201",
    "version" : 772,
    "random": 16,
@@ -746,7 +766,7 @@ This document requests that IANA open a new registry entitled "cTLS Template Key
 | finished_size           | 13       | (This document) |
 | optional                | 65535    | (This document) |
 
-## Adding a cTLS Template message type
+## Adding a cTLS Template message type {#template-handshaketype}
 
 IANA is requested to add the following entry to the TLS HandshakeType registry.
 
@@ -814,6 +834,7 @@ The following compression profile was used in this example:
 
 ~~~~~JSON
 {
+  "ctlsVersion": 0,
   "profile": "abcdef1234",
   "version": 772,
   "cipherSuite": "TLS_AES_128_CCM_8_SHA256",
