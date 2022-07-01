@@ -148,15 +148,21 @@ supported_versions extensions in the ClientHello and ServerHello would be omitte
 
 ~~~~JSON
 {
-   "version" : 772,
-   "cipherSuite" : "TLS_AES_128_GCM_SHA256"
+  "profile": "0001020304050607",
+  "version": 772,
+  "cipherSuite": "TLS_AES_128_GCM_SHA256"
 }
 ~~~~
 
 The following elements are defined:
 
-profile (integer):
-: identifies the profile being defined.
+profile (string):
+: identifies the profile being defined (default: ""). If present, this key MUST
+contain a hex-encoded sequence of 0-255 bytes (the "profile ID"). IDs whose
+decoded length is 4 bytes or less are reserved (see {{reserved-profiles}}). When a
+reserved value is used (including the default value), other keys MUST NOT appear
+in the template, and a client MUST NOT accept the template unless it recognizes
+the ID.
 
 version (integer):
 : indicates that both sides agree to the
@@ -377,10 +383,6 @@ records, and other protocols using the same 5-tuple.
       } CTLSPlaintext;
 ~~~~
 
-> OPEN ISSUE: The profile_id is needed in the ClientHello to inform the server
-what compression profile to use. For a ServerHello this field is not required.
-Should we make this field optional?
-
 Encrypted records use DTLS 1.3 {{!RFC9147}} record framing, comprising a configuration octet
 followed by optional connection ID, sequence number, and length fields. The
 encryption process and additional data are also as described in DTLS.
@@ -477,13 +479,8 @@ The cTLS ClientHello is defined as follows.
       } ClientHello;
 ~~~~
 
-The client uses the `profile_id` field to inform the server
-about the compression profile being used (see
-{{template-based-specialization}}).  This field MUST be set to
-a zero-length value and only if no compression profile is used.  Non zero-length
-values are agreed out of band between the client and server,
-as part of the specification of the compression profile.
-
+The `profile_id` field MUST identify the profile that is in use. A
+zero-length ID corresponds to the cTLS default protocol.
 
 
 ## ServerHello
@@ -523,7 +520,7 @@ else is ordinary TLS 1.3.
 
 ~~~~JSON
 {
-   "profile" : 1,
+   "profile": "0504030201",
    "version" : 772,
    "random": 16,
    "cipherSuite" : "TLS_AES_128_GCM_SHA256",
@@ -538,8 +535,6 @@ else is ordinary TLS 1.3.
 
 Version 772 corresponds to the hex representation 0x0304, named group "29"
 (0x001D) represents X25519.
-
-> OPEN ISSUE: Should we have a registry of well-known profiles?
 
 # Security Considerations
 
@@ -580,7 +575,7 @@ This document requests that IANA open a new registry entitled "cTLS Template Key
 
 | Key                    | JSON Type    | Reference       |
 |:======================:|:============:|:================|
-| profile                | number       | (This document) |
+| profile                | string       | (This document) |
 | version                | number       | (This document) |
 | cipherSuite            | string       | (This document) |
 | dhGroup                | string       | (This document) |
@@ -595,6 +590,28 @@ This document requests that IANA open a new registry entitled "cTLS Template Key
 | knownCertificates      | object       | (This document) |
 | finishedSize           | number       | (This document) |
 | optional               | object       | (This document) |
+
+## Reserved profiles
+
+This document requests that IANA open a new registry entitled "Well-known
+cTLS Profile IDs", on the Transport Layer Security (TLS) Parameters page,
+with the following columns:
+
+* ID value: A sequence of 1-4 octets.
+* Template: A JSON object.
+* Note: An explanation or reference.
+
+The ID values of length 1 are subject to a "Standards Action" registry
+policy. Values of length 2 are subject to an "RFC Required" policy. Values
+of length 3 and 4 are subject to a "First Come First Served" policy. Values
+longer than 4 octets are not subject to registration and MUST NOT appear
+in this registry.
+
+The initial registry contents are:
+
+| ID value  | Template           | Note          |
+|:=========:|:==================:|:=============:|
+| `[0x00]`  | `{"version": 772}` | cTLS 1.3-only |
 
 --- back
 
@@ -626,7 +643,7 @@ The following compression profile was used in this example:
 
 ~~~~~JSON
 {
-  "profile": 1,
+  "profile": "abcdef1234",
   "version": 772,
   "cipherSuite": "TLS_AES_128_CCM_8_SHA256",
   "dhGroup": "X25519",
@@ -659,20 +676,22 @@ The following compression profile was used in this example:
 }
 ~~~~~
 
-ClientHello: 36 bytes = DH(32) + Overhead(4)
+ClientHello: 73 bytes = Profile ID(5) + Random(32) + DH(32) + Overhead(4)
 
 ~~~
-01                    // ClientHello
-01                    // Profile ID
+01                    // Handshake.msg_type = ClientHello
+05 abcdef1234         // ClientHello.profile_id
+5856a1...43168c130    // ClientHello.random
 0020 a690...af948     // KeyShareEntry.key_exchange
 ~~~
 
-ServerHello: 36 = DH(32) + Overhead(4)
+ServerHello: 68 bytes = Random(32) + DH(32) + Overhead(4)
 
 ~~~
-02                 // ServerHello
-26                 // Extensions.length
-0020 9fbc...0f49   // KeyShareEntry.key_exchange
+02                     // Handshake.msg_type = ServerHello
+cff4c0...684c859ca8    // ServerHello.random
+26                     // Extensions.length
+0020 9fbc...0f49       // KeyShareEntry.key_exchange
 ~~~
 
 Server Flight: 80 = SIG(64) + MAC(8) + CERTID(1) + Overhead(7)
