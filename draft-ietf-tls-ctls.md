@@ -45,12 +45,12 @@ informative:
 
 --- abstract
 
-This document specifies a "compact" version of TLS and DTLS. It is logically
-isomorphic to ordinary TLS, but saves space by trimming obsolete material,
+This document specifies a "compact" version of TLS 1.3. It is
+isomorphic to TLS 1.3 but saves space by trimming obsolete material,
 tighter encoding, a template-based specialization technique, and
 alternative cryptographic techniques. cTLS is not directly interoperable with
-TLS or DTLS, but it should eventually be possible for a single server port
-to offer cTLS alongside TLS or DTLS.
+TLS 1.3, but it should eventually be possible for a cTLS/TLS 1.3 server
+to exist and successfully interoperate.
 
 --- middle
 
@@ -60,10 +60,8 @@ DISCLAIMER: This is a work-in-progress draft of cTLS and has not yet
 seen significant security analysis, so could contain major errors. It
 should not be used as a basis for building production systems.
 
-This document specifies "compact" versions of TLS {{!RFC8446}} and DTLS
-{{!RFC9147}}, respectively known as "Stream cTLS" and "Datagram cTLS".  cTLS
-provides equivalent security and functionality to TLS and DTLS, but it is
-designed to take up minimal bandwidth. The space reduction
+This document specifies a "compact" version of TLS 1.3 {{!RFC8446}}. It is isomorphic
+to TLS 1.3 but designed to take up minimal bandwidth. The space reduction
 is achieved by five basic techniques:
 
 - Omitting unnecessary values that are a holdover from previous versions
@@ -77,16 +75,17 @@ is achieved by five basic techniques:
 
 > OPEN ISSUE: Semi-static and point compression are never mentioned again.
 
-For the common (EC)DHE handshake with pre-established certificates, Stream cTLS
+For the common (EC)DHE handshake with pre-established certificates, cTLS
 achieves an overhead of 45 bytes over the minimum required by the
 cryptovariables.  For a PSK handshake, the overhead is 21 bytes.  Annotated
 handshake transcripts for these cases can be found in {{transcripts}}.
 
 > TODO: Update these values.
 
-cTLS supports the functionality of TLS and DTLS 1.3, and is forward-compatible
-to future versions of TLS and DTLS.  cTLS itself is versioned by
-`CTLSTemplate.version` (currently zero).
+Because cTLS is semantically equivalent to TLS, it can be viewed either
+as a related protocol or as a compression mechanism. Specifically, it
+can be implemented by a layer between the TLS handshake state
+machine and the record layer.
 
 # Conventions and Definitions
 
@@ -116,9 +115,25 @@ TLS 1.3 handshake, which is fully general and then remove degrees of freedom,
 eliding parts of the handshake which are used to express those degrees of
 freedom. For example, if we only support one version of TLS, then it
 is not necessary to have version negotiation and the
-supported_versions extension can be omitted.  Thus, each specialization
-produces a new protocol that preserves the security guarantees of TLS, but has
-its own unique handshake.
+supported_versions extension can be omitted.
+
+Importantly, this process is performed only for the wire encoding but
+not for the handshake transcript.  The result is that the transcript for a
+specialized cTLS handshake is the same as the transcript for a TLS 1.3 handshake
+with the same features used.
+
+One way of thinking of this is as if specialization is a stateful compression
+layer between the handshake and the record layer:
+
+~~~~~
++---------------+---------------+---------------+
+|   Handshake   |  Application  |     Alert     |
++---------------+---------------+---------------+    +---------+
+|               cTLS Compression Layer          |<---| Profile |
++---------------+---------------+---------------+    +---------+
+|          cTLS Record Layer / Application      |
++---------------+---------------+---------------+
+~~~~~
 
 By assuming that out-of-band agreements took place already prior to the start of
 the cTLS protocol exchange, the amount of data exchanged can be radically reduced.
@@ -180,7 +195,9 @@ from snake_case to camelCase), and whose values are a type-specific representati
 of the element intended to maximize legibility.  The cTLS version is represented
 by the key "ctlsVersion", whose value is an integer, defaulting to 0 if omitted.
 
-> OPEN ISSUE: Is it really worth converting snake_case to camelCase?  camelCase is slightly more traditional in JSON, and saves one byte, but it seems annoying to implement.
+> OPEN ISSUE: Is it really worth converting snake_case to camelCase?  camelCase
+is slightly more traditional in JSON, and saves one byte, but it seems annoying
+to implement.
 
 For example, the following specialization describes a protocol with a single fixed
 version (TLS 1.3) and a single fixed cipher suite (TLS_AES_128_GCM_SHA256). On the
@@ -218,7 +235,8 @@ In JSON, the profile ID is represented as a hexadecimal-encoded string.
 
 #### `version`
 
-Value: a single `ProtocolVersion` ({{!RFC8446, Section 4.1.2}}) that both parties agree to use. For TLS 1.3, the `ProtocolVersion` is 0x0304.
+Value: a single `ProtocolVersion` ({{!RFC8446, Section 4.1.2}}) that both parties
+agree to use. For TLS 1.3, the `ProtocolVersion` is 0x0304.
 
 When this element is included, the `supported_versions` extension
 is omitted from `ClientHello.extensions`.
@@ -227,7 +245,8 @@ In JSON, the version is represented as an integer (772 = 0x0304 for TLS 1.3).
 
 #### `cipher_suite`
 
-Value: a single `CipherSuite` ({{!RFC8446, Section 4.1.2}}) that both parties agree to use.
+Value: a single `CipherSuite` ({{!RFC8446, Section 4.1.2}}) that both parties
+agree to use.
 
 When this element is included, the `ClientHello.cipher_suites` and
 `ServerHello.cipher_suite` fields are omitted.
@@ -237,7 +256,8 @@ defined in {{RFC8446, Section 8.4}}.
 
 #### `dh_group`
 
-Value: a single `NamedGroup` ({{!RFC8446, Section 4.2.7}}) to use for key establishment.
+Value: a single `NamedGroup` ({{!RFC8446, Section 4.2.7}}) to use for key
+establishment.
 
 This is equivalent to a literal "supported_groups" extension
 consisting solely of this group.
@@ -245,30 +265,31 @@ consisting solely of this group.
 Static vectors (see {{static-vectors}}):
 
 * `KeyShareClientHello.client_shares`
-* `KeyShareEntry.key_exchange`, if the `NamedGroup` uses fixed-size key shares.
+* `KeyShareEntry.key_exchange`, if the `NamedGroup` uses fixed-size key
+  shares.
 
-In JSON, the group is listed by the code point name in {{RFC8446, Section 4.2.7}}
-(e.g., "x25519").
+In JSON, the group is listed by the code point name in
+{{RFC8446, Section 4.2.7}} (e.g., "x25519").
 
 #### `signature_algorithm`
 
-Value: a single `SignatureScheme` ({{!RFC8446, Section 4.2.3}}) to use for authentication.
+Value: a single `SignatureScheme` ({{!RFC8446, Section 4.2.3}}) to use for
+authentication.
 
 This is equivalent to a literal
 "signature_algorithms" extension consisting solely of this group.
 
-In JSON, the
-signature algorithm is listed by the code point name in {{RFC8446,
-Section 4.2.3}}. (e.g., ecdsa_secp256r1_sha256).
+In JSON, the signature algorithm is listed by the code point name in
+{{RFC8446, Section 4.2.3}} (e.g., ecdsa_secp256r1_sha256).
 
 #### `random`
 
 Value: a single `uint8`.
 
 The `ClientHello.Random` and `ServerHello.Random` values
-are truncated to the given length.  Where a 32-byte `Random` is
-required, the Random is padded to the right with 0s and the
-anti-downgrade mechanism in {{RFC8446, Section 4.1.3}} is disabled.
+are truncated to the given length. When the transcript is
+reconstructed, the Random is padded to the right with 0s and the
+anti-downgrade mechanism in {{RFC8446}}, Section 4.1.3 is disabled.
 IMPORTANT: Using short Random values can lead to potential
 attacks. The Random length MUST be less than or equal to 32 bytes.
 
@@ -327,12 +348,15 @@ treatment, as opposed to hex values.
 
 Static vectors (see {{static-vectors}}):
 
-* `Extension.extension_data` for any extension in `expected_extensions` whose value has fixed length.  This applies only to the corresponding message.
-* The `extensions` field of the corresponding message, if `allow_additional` is false.
+* `Extension.extension_data` for any extension in `expected_extensions` whose
+  value has fixed length.  This applies only to the corresponding message.
+* The `extensions` field of the corresponding message, if `allow_additional`
+  is false.
 
 In JSON, this value is represented as a dictionary with three keys:
 
-* `predefinedExtensions`: a dictionary mapping `ExtensionType` names ({{!RFC8446, Section 4.2}}) to values encoded as hexadecimal strings.
+* `predefinedExtensions`: a dictionary mapping `ExtensionType` names
+  ({{!RFC8446, Section 4.2}}) to values encoded as hexadecimal strings.
 * `expectedExtensions`: an array of `ExtensionType` names.
 * `allowAdditional`: `true` or `false`.
 
@@ -475,7 +499,7 @@ according to the following rationale:
 
 The only cTLS records that are sent in plaintext are handshake records
 (ClientHello and ServerHello/HRR) and alerts. cTLS alerts are the same
-as TLS/DTLS alerts and use the same content types.  For handshake records,
+as TLS alerts and use the same content types.  For handshake records,
 we set the `content_type` field to a fixed cTLS-specific value to
 distinguish cTLS plaintext records from encrypted records, TLS/DTLS
 records, and other protocols using the same 5-tuple.
@@ -545,16 +569,7 @@ has its usual meaning and the sequence number MUST be included.
 
 ## cTLS Handshake Layer {#ctlshandshake}
 
-The cTLS handshake is modeled in three layers:
-
-1. The Transport layer
-2. The Transcript layer
-3. The Logical layer
-
-### The Transport layer
-
-When `template.handshake_framing` is false, the cTLS transport layer
-uses a custom handshake
+When `template.handshakeFraming` is not `true`, cTLS uses a custom handshake
 framing that saves space by relying on the record layer for message lengths.
 (This saves 3 bytes per message compared to TLS, or 9 bytes compared to DTLS.)
 This compact framing is defined by the `CTLSHandshake` and
@@ -602,36 +617,6 @@ length of `2^16-1` or less.  When operating over UDP, large
 `CTLSDatagramHandshake` messages will also require the use of IP
 fragmentation, which is sometimes undesirable.  Operators can avoid these
 concerns by setting `template.handshakeFraming = true`.
-
-### The Transcript layer
-
-TLS and DTLS start the handshake with an empty transcript.  cTLS is different:
-it starts the transcript with a "virtual message" whose HandshakeType is
-`ctls_template` ({{template-handshaketype}}) containing the `CTLSTemplate` used
-for this connection.  This message is included in the transcript even though it
-is not exchanged during connection setup, in order to ensure that both parties
-are using the same template.  Subsequent messages are appended to the transcript
-as usual.
-
-When computing the handshake transcript, all handshake messages are represented
-in TLS `Handshake` messages, as in DTLS 1.3 ({{!RFC9147, Section 5.2}}),
-regardless of `template.handshake_framing`.
-
-To ensure that all parties agree about what protocol is in use, the Cryptographic
-Label Prefix used for the handshake SHALL be "Sctls " for Stream cTLS and "Dctls "
-for Datagram cTLS.  (This is similar to the prefix substitution in {{Section 5.9 of !RFC9147}}).
-
-### The Logical layer
-
-The logical handshake layer consists of handshake messages that are reconstructed
-following the instructions in the template.  At this layer, predefined extensions
-are reintroduced, truncated Random values are extended, and all information is
-prepared to enable the cryptographic handshake and any import or export of
-key material and configuration.
-
-There is no obligation to reconstruct logical handshake messages in any specific
-format, and client and server do not need to agree on the precise representation
-of these messages, so long as they agree on their logical contents.
 
 # Handshake Messages
 
@@ -702,7 +687,7 @@ else is ordinary TLS 1.3.
    "dhGroup": "x25519",
    "clientHelloExtensions": {
       "predefinedExtensions": {
-          "application_layer_protocol_negotiation" : "030016832",
+          "application_layer_protocol_negotiation": "030016832",
       },
       "allowAdditional": true
     }
@@ -765,16 +750,6 @@ This document requests that IANA open a new registry entitled "cTLS Template Key
 | known_certificates      | 12       | (This document) |
 | finished_size           | 13       | (This document) |
 | optional                | 65535    | (This document) |
-
-## Adding a cTLS Template message type {#template-handshaketype}
-
-IANA is requested to add the following entry to the TLS HandshakeType registry.
-
-* Value: TBD
-* Description: ctls_template
-* DTLS-OK: ??? Not clear what to put here.
-* Reference: (This document)
-* Comment: Virtual message used in cTLS.
 
 ## Activating the HelloRetryRequest MessageType
 
