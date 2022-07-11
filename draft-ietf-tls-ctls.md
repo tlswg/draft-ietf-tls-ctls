@@ -254,8 +254,13 @@ In JSON, the group is listed by the code point name in {{RFC8446, Section 4.2.7}
 
 Value: a single `SignatureScheme` ({{!RFC8446, Section 4.2.3}}) to use for authentication.
 
-This is equivalent to a literal
-"signature_algorithms" extension consisting solely of this group.
+This is equivalent to a literal "signature_algorithms" extension consisting
+solely of this group.  When this element is included,
+`CertificateVerify.algorithm` is omitted.
+
+Static vectors (see {{static-vectors}}):
+* `CertificateVerify.signature`, if the `SignatureScheme` has a fixed output
+  size.
 
 In JSON, the
 signature algorithm is listed by the code point name in {{RFC8446,
@@ -320,14 +325,15 @@ additional extensions are allowed here.
 `predefined_extensions` and `expected_extensions` MUST be in strictly ascending
 order by `ExtensionType`, and a single `ExtensionType` MUST NOT appear in both
 lists.  If the `version`, `dh_group`, or `signature_algorithm` element appears
-in the template, the corresponding `ExtensionType` MUST NOT appear here.
+in the template, the corresponding `ExtensionType` MUST NOT appear here.  The
+`pre_shared_key` `ExtensionType` MUST NOT appear in either list.
 
 > OPEN ISSUE: Are there other extensions that would benefit from special
 treatment, as opposed to hex values.
 
 Static vectors (see {{static-vectors}}):
 
-* `Extension.extension_data` for any extension in `expected_extensions` whose value has fixed length.  This applies only to the corresponding message.
+* `Extension.extension_data` for any extension in `expected_extensions` whose value does not depend on the vector length field.  This applies only to the corresponding message.
 * The `extensions` field of the corresponding message, if `allow_additional` is false.
 
 In JSON, this value is represented as a dictionary with three keys:
@@ -357,9 +363,9 @@ In JSON, this length is represented as an integer.
 
 Value: `uint8`, with 0 indicating "false" and 1 indicating "true".
 If true, handshake messages MUST be conveyed inside a `Handshake`
-({{!RFC8446, Section 4}}) struct on stream transports, or a
-`DTLSHandshake` ({{!RFC9147, Section 5.2}}) struct on datagram transports,
-and MAY be broken into multiple records as in TLS and DTLS.  Otherwise,
+({{!RFC8446, Section 4}}) struct on reliable, ordered transports, or a
+`DTLSHandshake` ({{!RFC9147, Section 5.2}}) struct otherwise,
+and MAY be broken into multiple records as in TLS and DTLS.  If false,
 each handshake message is conveyed in a `CTLSHandshake` or
 `CTLSDatagramHandshake` struct ({{ctlshandshake}}), which MUST be the payload
 of a single record.
@@ -422,12 +428,25 @@ mistaken for compressed one and erroneously decompressed.  For X.509, it is
 sufficient for the first byte of the compressed value (key) to have a value
 other than 0x30, since every X.509 certificate starts with this byte.
 
+This element can be used to compress both client and server certificates.
+However, in most deployments where client certificates are used, it would be
+inefficient to encode all client certificates into a single profile.  Instead,
+deployments can define a unique profile for each client, distinguished by
+the profile ID.  Note that the profile ID is sent in cleartext, so this
+strategy has significant privacy implications.
+
 ### Static vector compression {#static-vectors}
 
 Some cTLS template elements imply that certain vectors (as defined in {{!RFC8446,
 Section 3.4}}) have a fixed number of elements during the handshake.  These
 template elements note these "static vectors" in their definition.  When encoding
 a "static vector", its length prefix is omitted.
+
+In addition to the static vectors implied by various template elements,
+`Extension.extension_data` is always static in cTLS if the extension is any
+type listed in {{Section 4.2 of !RFC8446}} except `padding`.  cTLS implementations
+MUST be able to parse any of these extensions that the other party is permitted to
+send, but no other support is required.
 
 For example, suppose that the cTLS template is:
 
@@ -603,6 +622,8 @@ length of `2^16-1` or less.  When operating over UDP, large
 fragmentation, which is sometimes undesirable.  Operators can avoid these
 concerns by setting `template.handshakeFraming = true`.
 
+On unreliable transports, the DTLS 1.3 ACK system is used.
+
 ### The Transcript layer
 
 TLS and DTLS start the handshake with an empty transcript.  cTLS is different:
@@ -617,9 +638,11 @@ When computing the handshake transcript, all handshake messages are represented
 in TLS `Handshake` messages, as in DTLS 1.3 ({{!RFC9147, Section 5.2}}),
 regardless of `template.handshake_framing`.
 
-To ensure that all parties agree about what protocol is in use, the Cryptographic
-Label Prefix used for the handshake SHALL be "Sctls " for Stream cTLS and "Dctls "
-for Datagram cTLS.  (This is similar to the prefix substitution in {{Section 5.9 of !RFC9147}}).
+To ensure that all parties agree about what protocol is in use, and whether
+records are subject to loss, the Cryptographic Label Prefix used for the
+handshake SHALL be "Sctls " (for "Stream cTLS") if `Handshake` or `CTLSHandshake`
+transport was used, and "Dctls " (for "Datagram cTLS") otherwise.  (This is
+similar to the prefix substitution in {{Section 5.9 of !RFC9147}}).
 
 ### The Logical layer
 
@@ -682,7 +705,8 @@ the following format.
 The HelloRetryRequest is the same as the ServerHello above
 but without the unnecessary sentinel Random value.
 
-> OPEN ISSUE: Does `server_hello_extensions` apply to `HelloRetryRequest`?
+> OPEN ISSUE: Should we define a `hello_retry_request_extensions` template
+  element?  Or is this too far off the happy path to be worth optimizing?
 
 # Examples
 
@@ -721,10 +745,6 @@ The use of key ids is a new feature introduced in this document, which
 requires some analysis, especially as it looks like a potential source
 of identity misbinding. This is, however, entirely separable
 from the rest of the specification.
-
-Transcript expansion also needs some analysis and we need to determine
-whether we need an extension to indicate that cTLS is in use and with
-which profile.
 
 # IANA Considerations
 
