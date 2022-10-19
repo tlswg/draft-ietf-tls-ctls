@@ -148,7 +148,7 @@ enum {
   client_hello_extensions(8),
   server_hello_extensions(9),
   encrypted_extensions(10),
-  cert_request_extensions(11),
+  certificate_request_extensions(11),
   known_certificates(12),
   finished_size(13),
   optional(65535)
@@ -254,8 +254,9 @@ In JSON, the group is listed by the code point name in {{RFC8446, Section 4.2.7}
 
 Value: a single `SignatureScheme` ({{!RFC8446, Section 4.2.3}}) to use for authentication.
 
-This is equivalent to a literal
-"signature_algorithms" extension consisting solely of this group.
+This is equivalent to a placing a literal
+"signature_algorithms" extension consisting solely of this group in every
+extensions field where it is permitted to appear.
 
 In JSON, the
 signature algorithm is listed by the code point name in {{RFC8446,
@@ -285,15 +286,12 @@ Value: a single `uint8`, with 1 representing "true" and 0 representing
 
 If set to true, this element indicates that the client must authenticate with
 a certificate by sending Certificate and a CertificateVerify message.
-The server MUST omit the CertificateRequest message, as its contents
-are redundant.
-
-> OPEN ISSUE: We don't actually say that you can omit empty messages,
-so we need to add that somewhere.
+If the CertificateRequest message does not add information not already
+conveyed in the template, the server SHOULD omit it.
 
 In JSON, this value is represented as `true` or `false`.
 
-#### `client_hello_extensions`, `server_hello_extensions`, `encrypted_extensions`, and `cert_request_extensions`
+#### `client_hello_extensions`, `server_hello_extensions`, `encrypted_extensions`, and `certificate_request_extensions`
 
 Value: a single `CTLSExtensionTemplate` struct:
 
@@ -748,23 +746,23 @@ the value XXXX to the RFC number assigned for this document.
 
 This document requests that IANA open a new registry entitled "cTLS Template Keys", on the Transport Layer Security (TLS) Parameters page, with a "Specification Required" registration policy and the following initial contents:
 
-| Name                    | Value    | Reference       |
-|:=======================:|:========:|:================|
-| profile                 | 0        | (This document) |
-| version                 | 1        | (This document) |
-| cipher_suite            | 2        | (This document) |
-| dh_group                | 3        | (This document) |
-| signature_algorithm     | 4        | (This document) |
-| random                  | 5        | (This document) |
-| mutual_auth             | 6        | (This document) |
-| handshake_framing       | 7        | (This document) |
-| client_hello_extensions | 8        | (This document) |
-| server_hello_extensions | 9        | (This document) |
-| encrypted_extensions    | 10       | (This document) |
-| cert_request_extensions | 11       | (This document) |
-| known_certificates      | 12       | (This document) |
-| finished_size           | 13       | (This document) |
-| optional                | 65535    | (This document) |
+| Name                           | Value    | Reference       |
+|:==============================:|:========:|:================|
+| profile                        | 0        | (This document) |
+| version                        | 1        | (This document) |
+| cipher_suite                   | 2        | (This document) |
+| dh_group                       |  3        | (This document) |
+| signature_algorithm            | 4        | (This document) |
+| random                         | 5        | (This document) |
+| mutual_auth                    | 6        | (This document) |
+| handshake_framing              | 7        | (This document) |
+| client_hello_extensions        | 8        | (This document) |
+| server_hello_extensions        | 9        | (This document) |
+| encrypted_extensions           | 10       | (This document) |
+| certificate_request_extensions | 11       | (This document) |
+| known_certificates             | 12       | (This document) |
+| finished_size                  | 13       | (This document) |
+| optional                       | 65535    | (This document) |
 
 ## Adding a cTLS Template message type {#template-handshaketype}
 
@@ -819,14 +817,14 @@ The resulting byte counts are as follows:
 ~~~~~
                      ECDHE
               ------------------
-              TLS  CTLS  Overhead
-              ---  ----  --------
-ClientHello   132   69       2
-ServerHello    90   64       2
-ServerFlight  478   73       5
-ClientFlight  458   73       5
-==================================
-Total        1158  279      14
+              TLS  CTLS  Cryptovariables
+              ---  ----  ---------------
+ClientHello   132   71       64
+ServerHello    90   65       64
+ServerFlight  478   79       72
+ClientFlight  458   78       72
+========================================
+Total        1158  293      272
 ~~~~~
 
 
@@ -852,11 +850,7 @@ The following compression profile was used in this example:
     "expectedExtensions": ["key_share"],
     "allowAdditional": false
   },
-  "certificateRequestExtensions": {
-    "predefinedExtensions": {
-      "certificate_request_context": "00",
-      "signature_algorithms": "00020403"
-    },
+  "encryptedExtensions": {
     "allowAdditional": false
   },
   "mutualAuth": true,
@@ -873,7 +867,7 @@ The following compression profile was used in this example:
 ClientHello: 71 bytes = Profile ID(5) + Random(32) + DH(32) + Overhead(2)
 
 ~~~
-01                    // Handshake.msg_type = ClientHello
+01                    // CTLSHandshake.msg_type = ClientHello
 05 abcdef1234         // ClientHello.profile_id
 5856a1...43168c130    // ClientHello.random
 a690...af948          // KeyShareEntry.key_exchange
@@ -882,17 +876,19 @@ a690...af948          // KeyShareEntry.key_exchange
 ServerHello: 65 bytes = Random(32) + DH(32) + Overhead(1)
 
 ~~~
-02                     // Handshake.msg_type = ServerHello
+02                     // CTLSHandshake.msg_type = ServerHello
 cff4c0...684c859ca8    // ServerHello.random
 9fbc...0f49            // KeyShareEntry.key_exchange
 ~~~
 
-Server Flight: 78 = SIG(64) + MAC(8) + CERTID(1) + Overhead(5)
-
-The EncryptedExtensions, and the CertificateRequest messages
-are omitted because they are empty.
+Server Flight: 79 = SIG(64) + MAC(8) + CERTID(1) + Overhead(6)
 
 ~~~
+08                 // EncryptedExtensions
+
+// The CertificateRequest message is omitted because "mutualAuth" and
+// "signatureAlgorithm" are specified in the template.
+
 0b                 // Certificate
   03               //   CertificateList
     01             //     CertData.length
