@@ -348,6 +348,8 @@ length.
 > to know the minimum safe Finished size. See {{RFC8446, Section E.1}}
 > for more on this, as well as
 > https://mailarchive.ietf.org/arch/msg/tls/TugB5ddJu3nYg7chcyeIyUqWSbA.
+> The minimum safe size may vary depending on whether the template was
+> learned via a trusted channel.
 
 In JSON, this length is represented as an integer.
 
@@ -720,9 +722,15 @@ requires some analysis, especially as it looks like a potential source
 of identity misbinding. This is, however, entirely separable
 from the rest of the specification.
 
-Transcript expansion also needs some analysis and we need to determine
-whether we need an extension to indicate that cTLS is in use and with
-which profile.
+Once the handshake has completed, this specification is intended to
+provide a fully secured connection even if the client initially learned the
+template through an untrusted channel.  However, this security relies on
+the use of a cryptographically strong Finished message.  If the Finished
+message has not yet been received, or the transcript hash has been
+truncated by use of a small `finished_size` template element value, an
+attacker could be using a forged template to impersonate the other party.
+This should not impact any ordinary use of TLS, including Early Data (which
+is secured by the previously completed handshake).
 
 # IANA Considerations
 
