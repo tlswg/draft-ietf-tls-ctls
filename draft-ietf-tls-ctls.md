@@ -70,12 +70,8 @@ is achieved by five basic techniques:
   of TLS.
 - Omitting the fields and handshake messages required for preserving backwards-compatibility
   with earlier TLS versions.
-- More compact encodings, for example point compression.
 - A template-based specialization mechanism that allows pre-populating information
   at both endpoints without the need for negotiation.
-- Alternative cryptographic techniques, such as semi-static Diffie-Hellman.
-
-> OPEN ISSUE: Semi-static and point compression are never mentioned again.
 
 For the common (EC)DHE handshake with pre-established certificates, Stream cTLS
 achieves an overhead of 45 bytes over the minimum required by the
