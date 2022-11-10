@@ -260,8 +260,8 @@ permitted to appear.  When this element is included,
 `CertificateVerify.algorithm` is omitted.
 
 Static vectors (see {{static-vectors}}):
-* `CertificateVerify.signature`, if the `SignatureScheme` has a fixed output
-  size.
+* `CertificateVerify.signature`, if the `SignatureScheme` output is
+  self-delimiting.
 
 In JSON, the
 signature algorithm is listed by the code point name in {{RFC8446,
