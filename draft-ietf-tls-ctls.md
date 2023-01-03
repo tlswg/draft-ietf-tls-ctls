@@ -260,6 +260,7 @@ permitted to appear.  When this element is included,
 `CertificateVerify.algorithm` is omitted.
 
 Static vectors (see {{static-vectors}}):
+
 * `CertificateVerify.signature`, if the `SignatureScheme` output is
   self-delimiting.
 
