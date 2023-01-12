@@ -255,8 +255,8 @@ Static vectors (see {{static-vectors}}):
 * `KeyShareEntry.key_exchange`, if `CTLSDhGroup.key_length` is non-zero.
 
 In JSON, this value is represented as a dictionary with two keys:
-* `groupName`: a string containing the code point name in {{RFC8446, Section 4.2.7}} (e.g., "x25519")
-* `keyLength`: an integer
+* `groupName`: a string containing the code point name from the TLS Supported Groups registry (e.g., "x25519").
+* `keyLength`: an integer, defaulting to zero if omitted.
 
 #### `signature_algorithm`
 
@@ -270,8 +270,8 @@ struct {
 ~~~~
 
 This is equivalent to a placing a literal "signature_algorithms" extension
-consisting solely of `CTLSSignatureAlgorithm.signature_scheme` in every extensions field where it is
-permitted to appear.  When this element is included,
+consisting solely of `CTLSSignatureAlgorithm.signature_scheme` in every extensions field where the "signature_algorithms" extension is
+permitted to appear (i.e. ClientHello and CertificateRequest, in TLS 1.3).  When this element is included,
 `CertificateVerify.algorithm` is omitted.
 
 Static vectors (see {{static-vectors}}):
@@ -282,8 +282,8 @@ In JSON, the
 signature algorithm is listed by the code point name in {{RFC8446,
 Section 4.2.3}}. (e.g., ecdsa_secp256r1_sha256).
 In JSON, this value is represented as a dictionary with two keys:
-* `signatureScheme`: a string containing the code point name in {{RFC8446, Section 4.2.3}}. (e.g., ecdsa_secp256r1_sha256).
-* `signatureLength`: an integer.
+* `signatureScheme`: a string containing the code point name in the TLS SignatureScheme registry (e.g., "ecdsa_secp256r1_sha256").
+* `signatureLength`: an integer, defaulting to zero if omitted.
 
 #### `random`
 
