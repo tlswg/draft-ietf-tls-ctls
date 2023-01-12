@@ -246,7 +246,8 @@ struct {
 } CTLSKeyShareGroup;
 ~~~~
 
-This is equivalent to a literal "supported_groups" extension in ClientHello
+This is equivalent to adding a "supported_groups" extension to every message
+where that is allowed (i.e. ClientHello and EncryptedExtensions, in TLS 1.3) 
 consisting solely of the group `CTLSKeyShareGroup.group_name`.
 
 Static vectors (see {{static-vectors}}):
