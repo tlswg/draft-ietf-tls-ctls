@@ -303,8 +303,13 @@ Value: a single `CTLSExtensionTemplate` struct:
 
 ~~~~
 struct {
+    ExtensionType type;
+    uint8 omit_length;
+} ExpectedExtension;
+
+struct {
   Extension predefined_extensions<0..2^16-1>;
-  ExtensionType expected_extensions<0..2^16-1>;
+  ExpectedExtension expected_extensions<0..2^16-1>;
   uint8 allow_additional;
 } CTLSExtensionTemplate;
 ~~~~
@@ -317,6 +322,8 @@ The `expected_extensions` field indicates extensions that must be included
 in the corresponding message, at the beginning of its `extensions` field.
 The types of these extensions are omitted when serializing the `extensions`
 field of the corresponding message.
+The `omit_length` field MUST be 0 (false) or 1 (true), indicating whether the
+length of `Extension.extension_data` is omitted (see {{static-vectors}}).
 
 The `allow_additional` field MUST be 0 (false) or 1 (true), indicating whether
 additional extensions are allowed here.
@@ -332,13 +339,14 @@ treatment, as opposed to hex values.
 
 Static vectors (see {{static-vectors}}):
 
-* `Extension.extension_data` for any extension in `expected_extensions` whose value is self-delimiting (e.g., fixed length).  This applies only to the corresponding message.
+* `Extension.extension_data` for any extension in `expected_extensions` whose `omit_length` is true. This applies only to the corresponding message.
 * The `extensions` field of the corresponding message, if `allow_additional` is false.
 
 In JSON, this value is represented as a dictionary with three keys:
 
 * `predefinedExtensions`: a dictionary mapping `ExtensionType` names ({{!RFC8446, Section 4.2}}) to values encoded as hexadecimal strings.
-* `expectedExtensions`: an array of `ExtensionType` names.
+* `expectedExtensions`: an array of dictionnaries with two keys, `type` with
+  `ExtensionType` name and `omitLength` with `true` or `false`.
 * `allowAdditional`: `true` or `false`.
 
 If `predefinedExtensions` or `expectedExtensions` is empty, it MAY be omitted.
