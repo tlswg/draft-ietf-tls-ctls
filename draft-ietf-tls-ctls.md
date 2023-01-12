@@ -237,22 +237,22 @@ defined in {{RFC8446, Section 8.4}}.
 
 #### `dh_group`
 
-Value: a single `CTLSDhGroup` to use for key establishment.
+Value: a single `CTLSKeyShareGroup` to use for key establishment.
 
 ~~~~
 struct {
     NamedGroup group_name;
-    uint16 key_length;
-} CTLSDhGroup;
+    uint16 key_share_length;
+} CTLSKeyShareGroup;
 ~~~~
 
-This is equivalent to a literal "supported_groups" extension
-consisting solely of the group `CTLSDhGroup.group_name`.
+This is equivalent to a literal "supported_groups" extension in ClientHello
+consisting solely of the group `CTLSKeyShareGroup.group_name`.
 
 Static vectors (see {{static-vectors}}):
 
 * `KeyShareClientHello.client_shares`
-* `KeyShareEntry.key_exchange`, if `CTLSDhGroup.key_length` is non-zero.
+* `KeyShareEntry.key_exchange`, if `CTLSKeyShareGroup.key_share_length` is non-zero.
 
 In JSON, this value is represented as a dictionary with two keys:
 * `groupName`: a string containing the code point name from the TLS Supported Groups registry (e.g., "x25519").
