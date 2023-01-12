@@ -337,10 +337,9 @@ treatment, as opposed to hex values.
 
 Static vectors (see {{static-vectors}}):
 
-* `Extension.extension_data` for any extension in `expected_extensions` whose value is self-delimiting (e.g., fixed length).  This applies only to the corresponding message.
-* `Extension.extension_data` for any additional extension whose type is in
-  `known_self_delimiting_extensions`, or is listed in
-  {{Section 4.2 of !RFC8446}} except `padding`.
+* `Extension.extension_data` for any extension whose type is in
+  `omit_length`, or is listed in
+  {{Section 4.2 of !RFC8446}} except `padding`.  This applies only to the corresponding message.
 * The `extensions` field of the corresponding message, if `allow_additional` is false.
 
 In JSON, this value is represented as a dictionary with three keys:
