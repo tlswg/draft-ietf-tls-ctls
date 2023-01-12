@@ -305,7 +305,7 @@ Value: a single `CTLSExtensionTemplate` struct:
 struct {
   Extension predefined_extensions<0..2^16-1>;
   ExtensionType expected_extensions<0..2^16-1>;
-  ExtensionType known_self_delimiting_extensions<0..2^16-1>;
+  ExtensionType self_delimiting_extensions<0..2^16-1>;
   uint8 allow_additional;
 } CTLSExtensionTemplate;
 ~~~~
@@ -319,7 +319,7 @@ in the corresponding message, at the beginning of its `extensions` field.
 The types of these extensions are omitted when serializing the `extensions`
 field of the corresponding message.
 
-The `known_self_delimiting_extensions` field indicates extensions whose data is
+The `self_delimiting_extensions` field indicates extensions whose data is
 self-delimiting. The cTLS implementation MUST be able to parse all these
 extensions, and all extensions listed in {{Section 4.2 of !RFC8446}}.
 
@@ -338,7 +338,7 @@ treatment, as opposed to hex values.
 Static vectors (see {{static-vectors}}):
 
 * `Extension.extension_data` for any extension whose type is in
-  `omit_length`, or is listed in
+  `self_delimiting_extensions`, or is listed in
   {{Section 4.2 of !RFC8446}} except `padding`.  This applies only to the corresponding message.
 * The `extensions` field of the corresponding message, if `allow_additional` is false.
 
@@ -346,6 +346,7 @@ In JSON, this value is represented as a dictionary with three keys:
 
 * `predefinedExtensions`: a dictionary mapping `ExtensionType` names ({{!RFC8446, Section 4.2}}) to values encoded as hexadecimal strings.
 * `expectedExtensions`: an array of `ExtensionType` names.
+* `selfDelimitingExtensions`: an array of `ExtensionType` names.
 * `allowAdditional`: `true` or `false`.
 
 If `predefinedExtensions` or `expectedExtensions` is empty, it MAY be omitted.
