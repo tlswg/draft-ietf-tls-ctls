@@ -257,7 +257,7 @@ Static vectors (see {{static-vectors}}):
 
 In JSON, this value is represented as a dictionary with two keys:
 * `groupName`: a string containing the code point name from the TLS Supported Groups registry (e.g., "x25519").
-* `keyLength`: an integer, defaulting to zero if omitted.
+* `keyShareLength`: an integer, defaulting to zero if omitted.
 
 #### `signature_algorithm`
 
@@ -473,7 +473,10 @@ For example, suppose that the cTLS template is:
 {
   "ctlsVersion": 0,
   "version": 772,
-  "dhGroup": "x25519",
+  "dhGroup": {
+    "groupName": "x25519",
+    "keyShareLength": 32
+  },
   "clientHelloExtensions": {
     "expectedExtensions": ["key_share"],
     "allowAdditional": false
@@ -742,7 +745,10 @@ else is ordinary TLS 1.3.
    "version" : 772,
    "random": 16,
    "cipherSuite" : "TLS_AES_128_GCM_SHA256",
-   "dhGroup": "x25519",
+   "dhGroup": {
+     "groupName": "x25519",
+     "keyShareLength": 32
+   },
    "clientHelloExtensions": {
       "predefinedExtensions": {
           "application_layer_protocol_negotiation" : "030016832",
@@ -887,8 +893,14 @@ The following compression profile was used in this example:
   "profile": "abcdef1234",
   "version": 772,
   "cipherSuite": "TLS_AES_128_CCM_8_SHA256",
-  "dhGroup": "x25519",
-  "signatureAlgorithm": "ecdsa_secp256r1_sha256",
+  "dhGroup": {
+    "groupName": "x25519",
+    "keyShareLength": 32
+  },
+  "signatureAlgorithm": {
+    "signatureScheme": "ecdsa_secp256r1_sha256",
+    "signatureLength": 64
+  },
   "finishedSize": 8,
   "clientHelloExtensions": {
     "predefinedExtensions": {
