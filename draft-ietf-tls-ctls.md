@@ -78,11 +78,11 @@ is achieved by five basic techniques:
 > OPEN ISSUE: Semi-static and point compression are never mentioned again.
 
 For the common (EC)DHE handshake with pre-established certificates, Stream cTLS
-achieves an overhead of 45 bytes over the minimum required by the
-cryptovariables.  For a PSK handshake, the overhead is 21 bytes.  Annotated
-handshake transcripts for these cases can be found in {{transcripts}}.
+achieves an overhead of 53 bytes over the minimum required by the
+cryptovariables.  For a PSK handshake, the overhead is 21 bytes.  An annotated
+handshake transcript can be found in {{transcripts}}.
 
-> TODO: Update these values.
+> TODO: Make a PSK transcript and check the overhead.
 
 cTLS supports the functionality of TLS and DTLS 1.3, and is forward-compatible
 to future versions of TLS and DTLS.  cTLS itself is versioned by
