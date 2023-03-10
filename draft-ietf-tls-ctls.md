@@ -307,6 +307,7 @@ Value: a single `CTLSExtensionTemplate` struct:
 struct {
   Extension predefined_extensions<0..2^16-1>;
   ExtensionType expected_extensions<0..2^16-1>;
+  ExtensionType self_delimiting_extensions<0..2^16-1>;
   uint8 allow_additional;
 } CTLSExtensionTemplate;
 ~~~~
@@ -319,6 +320,10 @@ The `expected_extensions` field indicates extensions that must be included
 in the corresponding message, at the beginning of its `extensions` field.
 The types of these extensions are omitted when serializing the `extensions`
 field of the corresponding message.
+
+The `self_delimiting_extensions` field indicates extensions whose data is
+self-delimiting. The cTLS implementation MUST be able to parse all these
+extensions, and all extensions listed in {{Section 4.2 of !RFC8446}}.
 
 The `allow_additional` field MUST be 0 (false) or 1 (true), indicating whether
 additional extensions are allowed here.
@@ -334,13 +339,16 @@ treatment, as opposed to hex values.
 
 Static vectors (see {{static-vectors}}):
 
-* `Extension.extension_data` for any extension in `expected_extensions` whose value is self-delimiting (e.g., fixed length).  This applies only to the corresponding message.
+* `Extension.extension_data` for any extension whose type is in
+  `self_delimiting_extensions`, or is listed in
+  {{Section 4.2 of !RFC8446}} except `padding`.  This applies only to the corresponding message.
 * The `extensions` field of the corresponding message, if `allow_additional` is false.
 
 In JSON, this value is represented as a dictionary with three keys:
 
 * `predefinedExtensions`: a dictionary mapping `ExtensionType` names ({{!RFC8446, Section 4.2}}) to values encoded as hexadecimal strings.
 * `expectedExtensions`: an array of `ExtensionType` names.
+* `selfDelimitingExtensions`: an array of `ExtensionType` names.
 * `allowAdditional`: `true` or `false`.
 
 If `predefinedExtensions` or `expectedExtensions` is empty, it MAY be omitted.
@@ -444,12 +452,6 @@ Some cTLS template elements imply that certain vectors (as defined in {{!RFC8446
 Section 3.4}}) have a fixed number of elements during the handshake.  These
 template elements note these "static vectors" in their definition.  When encoding
 a "static vector", its length prefix is omitted.
-
-In addition to the static vectors implied by various template elements,
-`Extension.extension_data` is always static in cTLS if the extension is any
-type listed in {{Section 4.2 of !RFC8446}} except `padding`.  cTLS implementations
-MUST be able to parse any of these extensions that the other party is permitted to
-send, but no other support is required.
 
 For example, suppose that the cTLS template is:
 
