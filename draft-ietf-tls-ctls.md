@@ -49,7 +49,7 @@ This document specifies a "compact" version of TLS 1.3 and DTLS 1.3. It is logic
 isomorphic to ordinary TLS, but saves space by trimming obsolete material,
 tighter encoding, a template-based specialization technique, and
 alternative cryptographic techniques. cTLS is not directly interoperable with
-TLS 1.3 or DTLS 1.3 since the over-the-wire framing is different. A single server 
+TLS 1.3 or DTLS 1.3 since the over-the-wire framing is different. A single server
 can, however, offer cTLS alongside TLS or DTLS.
 
 --- middle
