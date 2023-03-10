@@ -45,12 +45,12 @@ informative:
 
 --- abstract
 
-This document specifies a "compact" version of TLS and DTLS. It is logically
+This document specifies a "compact" version of TLS 1.3 and DTLS 1.3. It is logically
 isomorphic to ordinary TLS, but saves space by trimming obsolete material,
 tighter encoding, a template-based specialization technique, and
 alternative cryptographic techniques. cTLS is not directly interoperable with
-TLS or DTLS, but it should eventually be possible for a single server port
-to offer cTLS alongside TLS or DTLS.
+TLS 1.3 or DTLS 1.3 since the over-the-wire framing is different. A single server
+can, however, offer cTLS alongside TLS or DTLS.
 
 --- middle
 
