@@ -73,7 +73,7 @@ is achieved by five basic techniques:
 - More compact encodings.
 - A template-based specialization mechanism that allows pre-populating information
   at both endpoints without the need for negotiation.
-- Alternative cryptographic techniques, such as nonce truncation. 
+- Alternative cryptographic techniques, such as nonce truncation.
 
 For the common (EC)DHE handshake with pre-established certificates, Stream cTLS
 achieves an overhead of 53 bytes over the minimum required by the
