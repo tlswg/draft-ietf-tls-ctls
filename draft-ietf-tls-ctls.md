@@ -78,11 +78,11 @@ is achieved by five basic techniques:
 > OPEN ISSUE: Semi-static and point compression are never mentioned again.
 
 For the common (EC)DHE handshake with pre-established certificates, Stream cTLS
-achieves an overhead of 45 bytes over the minimum required by the
-cryptovariables.  For a PSK handshake, the overhead is 21 bytes.  Annotated
-handshake transcripts for these cases can be found in {{transcripts}}.
+achieves an overhead of 53 bytes over the minimum required by the
+cryptovariables.  For a PSK handshake, the overhead is 21 bytes.  An annotated
+handshake transcript can be found in {{transcripts}}.
 
-> TODO: Update these values.
+> TODO: Make a PSK transcript and check the overhead.
 
 cTLS supports the functionality of TLS and DTLS 1.3, and is forward-compatible
 to future versions of TLS and DTLS.  cTLS itself is versioned by
@@ -296,6 +296,10 @@ If the CertificateRequest message does not add information not already
 conveyed in the template, the server SHOULD omit it.
 
 In JSON, this value is represented as `true` or `false`.
+
+> TODO: It seems like there was an intent to elide the
+> `Certificate.certificate_request_context` field, but this is not stated
+> explicitly anywhere.
 
 #### `client_hello_extensions`, `server_hello_extensions`, `encrypted_extensions`, and `certificate_request_extensions`
 
@@ -840,8 +844,8 @@ The initial registry contents are:
 # Example Exchange {#transcripts}
 
 The follow exchange illustrates a complete cTLS-based exchange supporting
-mutual authentication using certificates. The digital signatures use ECDSA with SHA256
-and NIST P256r1. The ephemeral Diffie-Hellman uses the FX25519 curve and
+mutual authentication using certificates. The digital signatures use Ed25519.
+The ephemeral Diffie-Hellman uses the X25519 curve and
 the exchange negotiates TLS-AES-128-CCM8-SHA256.
 The certificates are exchanged using certificate identifiers.
 
@@ -852,12 +856,12 @@ The resulting byte counts are as follows:
               ------------------
               TLS  CTLS  Cryptovariables
               ---  ----  ---------------
-ClientHello   132   71       64
-ServerHello    90   65       64
-ServerFlight  478   79       72
-ClientFlight  458   78       72
+ClientHello   132   74       64
+ServerHello    90   68       64
+ServerFlight  478   92       72
+ClientFlight  458   91       72
 ========================================
-Total        1158  293      272
+Total        1158  325      272
 ~~~~~
 
 
@@ -870,7 +874,7 @@ The following compression profile was used in this example:
   "version": 772,
   "cipherSuite": "TLS_AES_128_CCM_8_SHA256",
   "dhGroup": "x25519",
-  "signatureAlgorithm": "ecdsa_secp256r1_sha256",
+  "signatureAlgorithm": "ed25519",
   "finishedSize": 8,
   "clientHelloExtensions": {
     "predefinedExtensions": {
@@ -897,61 +901,96 @@ The following compression profile was used in this example:
 }
 ~~~~~
 
-ClientHello: 71 bytes = Profile ID(5) + Random(32) + DH(32) + Overhead(2)
+ClientHello: 74 bytes = Profile ID(5) + Random(32) + DH(32) + Overhead(5)
 
 ~~~
-01                    // CTLSHandshake.msg_type = ClientHello
-05 abcdef1234         // ClientHello.profile_id
-5856a1...43168c130    // ClientHello.random
-a690...af948          // KeyShareEntry.key_exchange
+$TBD               // CTLSClientPlaintext.message_type = ctls_handshake
+05 abcdef1234      // CTLSClientPlaintext.profile_id
+0041               // CTLSClientPlaintext.fragment length = 65
+  01               // CTLSHandshake.msg_type = client_hello
+    5856...c130    //   ClientHello.random (32 bytes)
+// ClientHello.extensions is omitted except for the key share contents.
+      a690...f948  //     KeyShareEntry.key_exchange (32 bytes)
 ~~~
 
-ServerHello: 65 bytes = Random(32) + DH(32) + Overhead(1)
+ServerHello: 68 bytes = Random(32) + DH(32) + Overhead(4)
 
 ~~~
-02                     // CTLSHandshake.msg_type = ServerHello
-cff4c0...684c859ca8    // ServerHello.random
-9fbc...0f49            // KeyShareEntry.key_exchange
+$TBD               // CTLSServerPlaintext.message_type = ctls_handshake
+0041               // CTLSServerPlaintext.fragment length
+  02               //   CTLSHandshake.msg_type = server_hello
+    cff4...9ca8    //     ServerHello.random (32 bytes)
+// ServerHello.extensions is omitted except for the key share contents.
+      9fbc...0f49  //       KeyShareEntry.key_exchange (32 bytes)
 ~~~
 
-Server Flight: 79 = SIG(64) + MAC(8) + CERTID(1) + Overhead(6)
+Server Flight: 92 =
+    SIG(64) + Finished(8) + MAC(8) + CERTID(1) + Overhead(11)
 
 ~~~
-08                 // EncryptedExtensions
+24                 // CTLSCipherText header, L=1, C,S,E=0
+0059               // CTLSCipherText.length = 89
+
+// BEGIN ENCRYPTED CONTENT
+
+08                 // CTLSHandshake.msg_type = encrypted_extensions
+
+// The EncryptedExtensions body is omitted because there are no more
+// extensions.  The length is also omitted, because allowAdditional is
+// false.
 
 // The CertificateRequest message is omitted because "mutualAuth" and
 // "signatureAlgorithm" are specified in the template.
 
-0b                 // Certificate
-  03               //   CertificateList
-    01             //     CertData.length
-      61           //       CertData = 'a'
+0b                 // CTLSHandshake.msg_type = certificate
+  00               //   Certificate.certificate_request_context = ""
+  03               //   Certificate.certificate_list length
+    01             //     CertificateEntry.cert_data length
+      61           //       cert_data = 'a'
+    00             //     CertificateEntry.extensions
 
-0f                 // CertificateVerify
-  3045...10ce      //   signature
+0f                 // CTLShandshake.msg_type = certificate_verify
+  3045...10ce      //   CertificateVerify.signature
 
-14                 // Finished
-  bfc9d66715bb2b04 //   VerifyData
+14                 // CTLSHandshake.msg_type = finished
+  bfc9d66715bb2b04 //   Finished.verify_data
+
+// END ENCRYPTED CONTENT
+
+b3d9...0aa7        // CCM-8 MAC (8 bytes)
 ~~~
 
-Client Flight: 78 bytes = SIG(64) + MAC(8) + CERTID(1) + Overhead(5)
+Client Flight: 91 bytes =
+    SIG(64) + Finished(8) + MAC(8) + CERTID(1) + Overhead(10)
 
 ~~~
-0b                 // Certificate
-  03               //   CertificateList
-    01             //     CertData.length
-      62           //       CertData = 'b'
+24                 // CTLSCipherText header, L=1, C,S,E=0
+0058               // CTLSCipherText.length = 88
 
+// BEGIN ENCRYPTED CONTENT
 
-0f                 // CertificateVerify
-  3045...f60e //   signature
+0b                 // CTLSHandshake.msg_type = certificate
+  00               //   Certificate.certificate_request_context = ""
+  03               //   Certificate.certificate_list length
+    01             //     CertificateEntry.cert_data length
+      62           //       cert_data = 'b'
+    00             //     CertificateEntry.extensions
 
-14                 // Finished
-  35e9c34eec2c5dc1 //   VerifyData
+0f                 // CTLSHandshake.msg_type = certificate_verify
+                   //   CertificateVerify.algorithm is omitted
+                   //   CertificateVerify.signature length is omitted
+  3045...f60e      //   CertificateVerify.signature (64 bytes)
+
+14                 // CTLSHandshake.msg_type = finished
+  35e9c34eec2c5dc1 //   Finished.verify_data
+
+// END ENCRYPTED CONTENT
+
+09c5..37b1         // CCM-8 MAC (8 bytes)
 ~~~
 
 
 # Acknowledgments
 {:numbered="false"}
 
-We would like to thank Karthikeyan Bhargavan, Owen Friel, Sean Turner, Martin Thomson, and Chris Wood.
+We would like to thank Karthikeyan Bhargavan, Owen Friel, Sean Turner, Martin Thomson, Chris Wood, and John Preuß Mattsson.
