@@ -742,10 +742,6 @@ Version 772 corresponds to the hex representation 0x0304 (i.e. 1.3).
 
 # Security Considerations
 
-WARNING: This document is effectively brand new and has seen no
-analysis. The idea here is that cTLS is isomorphic to TLS 1.3, and
-therefore should provide equivalent security guarantees.
-
 The use of key ids is a new feature introduced in this document, which
 requires some analysis, especially as it looks like a potential source
 of identity misbinding. This is, however, entirely separable
