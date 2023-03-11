@@ -817,16 +817,19 @@ This document requests that IANA change the name of entry 6 in the TLS
 HandshakeType Registry from "hello_retry_request_RESERVED" to
 "hello_retry_request", and set its Reference field to this document.
 
-## Reserved profiles
+## Profile ID Registry
 
 This document requests that IANA open a new registry entitled "Well-known
 cTLS Profile IDs", on the Transport Layer Security (TLS) Parameters page,
 with the following columns:
 
-* ID value: A sequence of 1-4 octets.
-* Template: A JSON object.
-* Note: An explanation or reference.
-
+* Value: A sequence of 1-4 octets.
+* Name: Name of the profile.
+* Description: Short description of the profile.
+* Change Controller: For Standards Track RFCs, list the "IESG".  For others, 
+give thename of the responsible party.
+* Reference: Reference to the document or documents that specify the profile.
+ 
 The ID values of length 1 are subject to a "Standards Action" registry
 policy. Values of length 2 are subject to an "RFC Required" policy. Values
 of length 3 and 4 are subject to a "First Come First Served" policy. Values
@@ -835,9 +838,12 @@ in this registry.
 
 The initial registry contents are:
 
-| ID value  | Template           | Note          |
-|:=========:|:==================:|:=============:|
-| `[0x00]`  | `{"version": 772}` | cTLS 1.3-only |
+| Value     | Name        | Description                | Change Controller | Reference |
+|:=========:|:===========:|:==========================:|:====:|:=======:|
+| `[0x00]`  | base-cTLS   | Base cTLS 1.3-only Profile | IESG | RFCXXXX |
+
+> RFC EDITOR: Please replace the value TBD with the value assigned by IANA, and
+the value XXXX to the RFC number assigned for this document.
 
 --- back
 
