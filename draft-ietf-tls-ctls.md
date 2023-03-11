@@ -28,8 +28,8 @@ author:
  -
     ins: H. Tschofenig
     name: Hannes Tschofenig
-    organization: Arm Limited
-    email: hannes.tschofenig@arm.com
+    organization:
+    email: hannes.tschofenig@gmx.net
  -
     ins: B. Schwartz
     name: Benjamin M. Schwartz
