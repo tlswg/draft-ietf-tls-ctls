@@ -177,8 +177,6 @@ from snake_case to camelCase), and whose values are a type-specific representati
 of the element intended to maximize legibility.  The cTLS version is represented
 by the key "ctlsVersion", whose value is an integer, defaulting to 0 if omitted.
 
-> OPEN ISSUE: Is it really worth converting snake_case to camelCase?  camelCase is slightly more traditional in JSON, and saves one byte, but it seems annoying to implement.
-
 For example, the following specialization describes a protocol with a single fixed
 version (TLS 1.3) and a single fixed cipher suite (TLS_AES_128_GCM_SHA256). On the
 wire, ClientHello.cipher_suites, ServerHello.cipher_suites, and the
