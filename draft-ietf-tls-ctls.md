@@ -798,7 +798,7 @@ IANA is requested to add the following entry to the TLS HandshakeType registry.
 
 * Value: TBD
 * Description: ctls_template
-* DTLS-OK: ??? Not clear what to put here.
+* DTLS-OK: Y
 * Reference: (This document)
 * Comment: Virtual message used in cTLS.
 
