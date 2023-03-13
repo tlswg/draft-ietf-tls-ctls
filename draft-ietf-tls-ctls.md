@@ -162,8 +162,6 @@ struct {
 } CTLSTemplate;
 ~~~~
 
-> TODO: Reorder enum.
-
 Elements in a `CTLSTemplate` MUST appear sorted by the type field in strictly
 ascending order.  The initial elements are defined in the subsections below.
 Future elements can be added via an IANA registry ({{template-keys}}).  When
@@ -192,8 +190,6 @@ supported_versions extensions in the ClientHello and ServerHello would be omitte
 ~~~~
 
 ### Initial template elements
-
-> TODO: Reorder section.
 
 #### `profile`
 
@@ -296,6 +292,19 @@ In JSON, this value is represented as `true` or `false`.
 > `Certificate.certificate_request_context` field, but this is not stated
 > explicitly anywhere.
 
+#### `handshake_framing`
+
+Value: `uint8`, with 0 indicating "false" and 1 indicating "true".
+If true, handshake messages MUST be conveyed inside a `Handshake`
+({{!RFC8446, Section 4}}) struct on reliable, ordered transports, or a
+`DTLSHandshake` ({{!RFC9147, Section 5.2}}) struct otherwise,
+and MAY be broken into multiple records as in TLS and DTLS.  If false,
+each handshake message is conveyed in a `CTLSHandshake` or
+`CTLSDatagramHandshake` struct ({{ctlshandshake}}), which MUST be the payload
+of a single record.
+
+In JSON, this value is represented as `true` or `false`.
+
 #### `client_hello_extensions`, `server_hello_extensions`, `encrypted_extensions`, and `certificate_request_extensions`
 
 Value: a single `CTLSExtensionTemplate` struct:
@@ -366,19 +375,6 @@ length.
 > learned via a trusted channel.
 
 In JSON, this length is represented as an integer.
-
-#### `handshake_framing`
-
-Value: `uint8`, with 0 indicating "false" and 1 indicating "true".
-If true, handshake messages MUST be conveyed inside a `Handshake`
-({{!RFC8446, Section 4}}) struct on reliable, ordered transports, or a
-`DTLSHandshake` ({{!RFC9147, Section 5.2}}) struct otherwise,
-and MAY be broken into multiple records as in TLS and DTLS.  If false,
-each handshake message is conveyed in a `CTLSHandshake` or
-`CTLSDatagramHandshake` struct ({{ctlshandshake}}), which MUST be the payload
-of a single record.
-
-In JSON, this value is represented as `true` or `false`.
 
 #### `optional`
 
