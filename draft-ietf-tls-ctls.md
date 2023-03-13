@@ -34,7 +34,7 @@ author:
     ins: B. Schwartz
     name: Benjamin M. Schwartz
     organization: Google
-    email: bemasc@google.com
+    email: ietf@bemasc.net
 
 normative:
   RFC2119:
