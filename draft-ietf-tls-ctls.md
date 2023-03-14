@@ -28,13 +28,13 @@ author:
  -
     ins: H. Tschofenig
     name: Hannes Tschofenig
-    organization: Arm Limited
-    email: hannes.tschofenig@arm.com
+    organization:
+    email: hannes.tschofenig@gmx.net
  -
     ins: B. Schwartz
     name: Benjamin M. Schwartz
     organization: Google
-    email: bemasc@google.com
+    email: ietf@bemasc.net
 
 normative:
   RFC2119:
@@ -45,12 +45,11 @@ informative:
 
 --- abstract
 
-This document specifies a "compact" version of TLS and DTLS. It is logically
-isomorphic to ordinary TLS, but saves space by trimming obsolete material,
-tighter encoding, a template-based specialization technique, and
-alternative cryptographic techniques. cTLS is not directly interoperable with
-TLS or DTLS, but it should eventually be possible for a single server port
-to offer cTLS alongside TLS or DTLS.
+This document specifies a "compact" version of TLS 1.3 and DTLS 1.3. It saves bandwidth
+by trimming obsolete material, tighter encoding, a template-based specialization technique,
+and alternative cryptographic techniques. cTLS is not directly interoperable with
+TLS 1.3 or DTLS 1.3 since the over-the-wire framing is different. A single server
+can, however, offer cTLS alongside TLS or DTLS.
 
 --- middle
 
@@ -70,19 +69,17 @@ is achieved by five basic techniques:
   of TLS.
 - Omitting the fields and handshake messages required for preserving backwards-compatibility
   with earlier TLS versions.
-- More compact encodings, for example point compression.
+- More compact encodings.
 - A template-based specialization mechanism that allows pre-populating information
   at both endpoints without the need for negotiation.
-- Alternative cryptographic techniques, such as semi-static Diffie-Hellman.
-
-> OPEN ISSUE: Semi-static and point compression are never mentioned again.
+- Alternative cryptographic techniques, such as nonce truncation.
 
 For the common (EC)DHE handshake with pre-established certificates, Stream cTLS
-achieves an overhead of 45 bytes over the minimum required by the
-cryptovariables.  For a PSK handshake, the overhead is 21 bytes.  Annotated
-handshake transcripts for these cases can be found in {{transcripts}}.
+achieves an overhead of 53 bytes over the minimum required by the
+cryptovariables.  For a PSK handshake, the overhead is 21 bytes.  An annotated
+handshake transcript can be found in {{transcripts}}.
 
-> TODO: Update these values.
+> TODO: Make a PSK transcript and check the overhead.
 
 cTLS supports the functionality of TLS and DTLS 1.3, and is forward-compatible
 to future versions of TLS and DTLS.  cTLS itself is versioned by
@@ -165,8 +162,6 @@ struct {
 } CTLSTemplate;
 ~~~~
 
-> TODO: Reorder enum.
-
 Elements in a `CTLSTemplate` MUST appear sorted by the type field in strictly
 ascending order.  The initial elements are defined in the subsections below.
 Future elements can be added via an IANA registry ({{template-keys}}).  When
@@ -179,8 +174,6 @@ It consists of a dictionary whose keys are the name of each element type (conver
 from snake_case to camelCase), and whose values are a type-specific representation
 of the element intended to maximize legibility.  The cTLS version is represented
 by the key "ctlsVersion", whose value is an integer, defaulting to 0 if omitted.
-
-> OPEN ISSUE: Is it really worth converting snake_case to camelCase?  camelCase is slightly more traditional in JSON, and saves one byte, but it seems annoying to implement.
 
 For example, the following specialization describes a protocol with a single fixed
 version (TLS 1.3) and a single fixed cipher suite (TLS_AES_128_GCM_SHA256). On the
@@ -197,8 +190,6 @@ supported_versions extensions in the ClientHello and ServerHello would be omitte
 ~~~~
 
 ### Initial template elements
-
-> TODO: Reorder section.
 
 #### `profile`
 
@@ -315,6 +306,23 @@ conveyed in the template, the server SHOULD omit it.
 
 In JSON, this value is represented as `true` or `false`.
 
+> TODO: It seems like there was an intent to elide the
+> `Certificate.certificate_request_context` field, but this is not stated
+> explicitly anywhere.
+
+#### `handshake_framing`
+
+Value: `uint8`, with 0 indicating "false" and 1 indicating "true".
+If true, handshake messages MUST be conveyed inside a `Handshake`
+({{!RFC8446, Section 4}}) struct on reliable, ordered transports, or a
+`DTLSHandshake` ({{!RFC9147, Section 5.2}}) struct otherwise,
+and MAY be broken into multiple records as in TLS and DTLS.  If false,
+each handshake message is conveyed in a `CTLSHandshake` or
+`CTLSDatagramHandshake` struct ({{ctlshandshake}}), which MUST be the payload
+of a single record.
+
+In JSON, this value is represented as `true` or `false`.
+
 #### `client_hello_extensions`, `server_hello_extensions`, `encrypted_extensions`, and `certificate_request_extensions`
 
 Value: a single `CTLSExtensionTemplate` struct:
@@ -323,6 +331,7 @@ Value: a single `CTLSExtensionTemplate` struct:
 struct {
   Extension predefined_extensions<0..2^16-1>;
   ExtensionType expected_extensions<0..2^16-1>;
+  ExtensionType self_delimiting_extensions<0..2^16-1>;
   uint8 allow_additional;
 } CTLSExtensionTemplate;
 ~~~~
@@ -335,6 +344,10 @@ The `expected_extensions` field indicates extensions that must be included
 in the corresponding message, at the beginning of its `extensions` field.
 The types of these extensions are omitted when serializing the `extensions`
 field of the corresponding message.
+
+The `self_delimiting_extensions` field indicates extensions whose data is
+self-delimiting. The cTLS implementation MUST be able to parse all these
+extensions, and all extensions listed in {{Section 4.2 of !RFC8446}}.
 
 The `allow_additional` field MUST be 0 (false) or 1 (true), indicating whether
 additional extensions are allowed here.
@@ -350,13 +363,16 @@ treatment, as opposed to hex values.
 
 Static vectors (see {{static-vectors}}):
 
-* `Extension.extension_data` for any extension in `expected_extensions` whose value is self-delimiting (e.g., fixed length).  This applies only to the corresponding message.
+* `Extension.extension_data` for any extension whose type is in
+  `self_delimiting_extensions`, or is listed in
+  {{Section 4.2 of !RFC8446}} except `padding`.  This applies only to the corresponding message.
 * The `extensions` field of the corresponding message, if `allow_additional` is false.
 
 In JSON, this value is represented as a dictionary with three keys:
 
 * `predefinedExtensions`: a dictionary mapping `ExtensionType` names ({{!RFC8446, Section 4.2}}) to values encoded as hexadecimal strings.
 * `expectedExtensions`: an array of `ExtensionType` names.
+* `selfDelimitingExtensions`: an array of `ExtensionType` names.
 * `allowAdditional`: `true` or `false`.
 
 If `predefinedExtensions` or `expectedExtensions` is empty, it MAY be omitted.
@@ -377,19 +393,6 @@ length.
 > learned via a trusted channel.
 
 In JSON, this length is represented as an integer.
-
-#### `handshake_framing`
-
-Value: `uint8`, with 0 indicating "false" and 1 indicating "true".
-If true, handshake messages MUST be conveyed inside a `Handshake`
-({{!RFC8446, Section 4}}) struct on reliable, ordered transports, or a
-`DTLSHandshake` ({{!RFC9147, Section 5.2}}) struct otherwise,
-and MAY be broken into multiple records as in TLS and DTLS.  If false,
-each handshake message is conveyed in a `CTLSHandshake` or
-`CTLSDatagramHandshake` struct ({{ctlshandshake}}), which MUST be the payload
-of a single record.
-
-In JSON, this value is represented as `true` or `false`.
 
 #### `optional`
 
@@ -460,12 +463,6 @@ Some cTLS template elements imply that certain vectors (as defined in {{!RFC8446
 Section 3.4}}) have a fixed number of elements during the handshake.  These
 template elements note these "static vectors" in their definition.  When encoding
 a "static vector", its length prefix is omitted.
-
-In addition to the static vectors implied by various template elements,
-`Extension.extension_data` is always static in cTLS if the extension is any
-type listed in {{Section 4.2 of !RFC8446}} except `padding`.  cTLS implementations
-MUST be able to parse any of these extensions that the other party is permitted to
-send, but no other support is required.
 
 For example, suppose that the cTLS template is:
 
@@ -797,8 +794,6 @@ added in the registry has the following form:
 > RFC EDITOR: Please replace the value TBD with the value assigned by IANA, and
 the value XXXX to the RFC number assigned for this document.
 
-> OPEN ISSUE: Should we require standards action for all profile IDs that would fit in 2 octets.
-
 ## Template Keys
 
 This document requests that IANA open a new registry entitled "cTLS Template Keys", on the Transport Layer Security (TLS) Parameters page, with a "Specification Required" registration policy and the following initial contents:
@@ -827,7 +822,7 @@ IANA is requested to add the following entry to the TLS HandshakeType registry.
 
 * Value: TBD
 * Description: ctls_template
-* DTLS-OK: ??? Not clear what to put here.
+* DTLS-OK: Y
 * Reference: (This document)
 * Comment: Virtual message used in cTLS.
 
@@ -864,8 +859,8 @@ The initial registry contents are:
 # Example Exchange {#transcripts}
 
 The follow exchange illustrates a complete cTLS-based exchange supporting
-mutual authentication using certificates. The digital signatures use ECDSA with SHA256
-and NIST P256r1. The ephemeral Diffie-Hellman uses the FX25519 curve and
+mutual authentication using certificates. The digital signatures use Ed25519.
+The ephemeral Diffie-Hellman uses the X25519 curve and
 the exchange negotiates TLS-AES-128-CCM8-SHA256.
 The certificates are exchanged using certificate identifiers.
 
@@ -876,12 +871,12 @@ The resulting byte counts are as follows:
               ------------------
               TLS  CTLS  Cryptovariables
               ---  ----  ---------------
-ClientHello   132   71       64
-ServerHello    90   65       64
-ServerFlight  478   79       72
-ClientFlight  458   78       72
+ClientHello   132   74       64
+ServerHello    90   68       64
+ServerFlight  478   92       72
+ClientFlight  458   91       72
 ========================================
-Total        1158  293      272
+Total        1158  325      272
 ~~~~~
 
 
@@ -898,7 +893,7 @@ The following compression profile was used in this example:
     "keyShareLength": 32
   },
   "signatureAlgorithm": {
-    "signatureScheme": "ecdsa_secp256r1_sha256",
+    "signatureScheme": "ed25519",
     "signatureLength": 64
   },
   "finishedSize": 8,
@@ -927,61 +922,96 @@ The following compression profile was used in this example:
 }
 ~~~~~
 
-ClientHello: 71 bytes = Profile ID(5) + Random(32) + DH(32) + Overhead(2)
+ClientHello: 74 bytes = Profile ID(5) + Random(32) + DH(32) + Overhead(5)
 
 ~~~
-01                    // CTLSHandshake.msg_type = ClientHello
-05 abcdef1234         // ClientHello.profile_id
-5856a1...43168c130    // ClientHello.random
-a690...af948          // KeyShareEntry.key_exchange
+$TBD               // CTLSClientPlaintext.message_type = ctls_handshake
+05 abcdef1234      // CTLSClientPlaintext.profile_id
+0041               // CTLSClientPlaintext.fragment length = 65
+  01               // CTLSHandshake.msg_type = client_hello
+    5856...c130    //   ClientHello.random (32 bytes)
+// ClientHello.extensions is omitted except for the key share contents.
+      a690...f948  //     KeyShareEntry.key_exchange (32 bytes)
 ~~~
 
-ServerHello: 65 bytes = Random(32) + DH(32) + Overhead(1)
+ServerHello: 68 bytes = Random(32) + DH(32) + Overhead(4)
 
 ~~~
-02                     // CTLSHandshake.msg_type = ServerHello
-cff4c0...684c859ca8    // ServerHello.random
-9fbc...0f49            // KeyShareEntry.key_exchange
+$TBD               // CTLSServerPlaintext.message_type = ctls_handshake
+0041               // CTLSServerPlaintext.fragment length
+  02               //   CTLSHandshake.msg_type = server_hello
+    cff4...9ca8    //     ServerHello.random (32 bytes)
+// ServerHello.extensions is omitted except for the key share contents.
+      9fbc...0f49  //       KeyShareEntry.key_exchange (32 bytes)
 ~~~
 
-Server Flight: 79 = SIG(64) + MAC(8) + CERTID(1) + Overhead(6)
+Server Flight: 92 =
+    SIG(64) + Finished(8) + MAC(8) + CERTID(1) + Overhead(11)
 
 ~~~
-08                 // EncryptedExtensions
+24                 // CTLSCipherText header, L=1, C,S,E=0
+0059               // CTLSCipherText.length = 89
+
+// BEGIN ENCRYPTED CONTENT
+
+08                 // CTLSHandshake.msg_type = encrypted_extensions
+
+// The EncryptedExtensions body is omitted because there are no more
+// extensions.  The length is also omitted, because allowAdditional is
+// false.
 
 // The CertificateRequest message is omitted because "mutualAuth" and
 // "signatureAlgorithm" are specified in the template.
 
-0b                 // Certificate
-  03               //   CertificateList
-    01             //     CertData.length
-      61           //       CertData = 'a'
+0b                 // CTLSHandshake.msg_type = certificate
+  00               //   Certificate.certificate_request_context = ""
+  03               //   Certificate.certificate_list length
+    01             //     CertificateEntry.cert_data length
+      61           //       cert_data = 'a'
+    00             //     CertificateEntry.extensions
 
-0f                 // CertificateVerify
-  3045...10ce      //   signature
+0f                 // CTLShandshake.msg_type = certificate_verify
+  3045...10ce      //   CertificateVerify.signature
 
-14                 // Finished
-  bfc9d66715bb2b04 //   VerifyData
+14                 // CTLSHandshake.msg_type = finished
+  bfc9d66715bb2b04 //   Finished.verify_data
+
+// END ENCRYPTED CONTENT
+
+b3d9...0aa7        // CCM-8 MAC (8 bytes)
 ~~~
 
-Client Flight: 78 bytes = SIG(64) + MAC(8) + CERTID(1) + Overhead(5)
+Client Flight: 91 bytes =
+    SIG(64) + Finished(8) + MAC(8) + CERTID(1) + Overhead(10)
 
 ~~~
-0b                 // Certificate
-  03               //   CertificateList
-    01             //     CertData.length
-      62           //       CertData = 'b'
+24                 // CTLSCipherText header, L=1, C,S,E=0
+0058               // CTLSCipherText.length = 88
 
+// BEGIN ENCRYPTED CONTENT
 
-0f                 // CertificateVerify
-  3045...f60e //   signature
+0b                 // CTLSHandshake.msg_type = certificate
+  00               //   Certificate.certificate_request_context = ""
+  03               //   Certificate.certificate_list length
+    01             //     CertificateEntry.cert_data length
+      62           //       cert_data = 'b'
+    00             //     CertificateEntry.extensions
 
-14                 // Finished
-  35e9c34eec2c5dc1 //   VerifyData
+0f                 // CTLSHandshake.msg_type = certificate_verify
+                   //   CertificateVerify.algorithm is omitted
+                   //   CertificateVerify.signature length is omitted
+  3045...f60e      //   CertificateVerify.signature (64 bytes)
+
+14                 // CTLSHandshake.msg_type = finished
+  35e9c34eec2c5dc1 //   Finished.verify_data
+
+// END ENCRYPTED CONTENT
+
+09c5..37b1         // CCM-8 MAC (8 bytes)
 ~~~
 
 
 # Acknowledgments
 {:numbered="false"}
 
-We would like to thank Karthikeyan Bhargavan, Owen Friel, Sean Turner, Martin Thomson, and Chris Wood.
+We would like to thank Karthikeyan Bhargavan, Owen Friel, Sean Turner, Martin Thomson, Chris Wood, and John Preuß Mattsson.
