@@ -761,7 +761,7 @@ attacker could be using a forged template to impersonate the other party.
 This should not impact any ordinary use of TLS, including Early Data (which
 is secured by the previously completed handshake).
 
-# IANA Considerations
+# IANA Considerations {#iana}
 
 ## Adding a ContentType
 
@@ -817,10 +817,10 @@ This document requests that IANA change the name of entry 6 in the TLS
 HandshakeType Registry from "hello_retry_request_RESERVED" to
 "hello_retry_request", and set its Reference field to this document.
 
-## Profile ID Registry
+## cTLS Profile ID Registry
 
-This document requests that IANA open a new registry entitled "Well-known
-cTLS Profile IDs", on the Transport Layer Security (TLS) Parameters page,
+This document requests that IANA open a new registry entitled
+"cTLS Profile IDs", on the Transport Layer Security (TLS) Parameters page,
 with the following columns:
 
 * Value: A sequence of 1-4 octets.
