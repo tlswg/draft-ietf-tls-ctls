@@ -16,7 +16,7 @@ author:
  -
     ins: E. Rescorla
     name: Eric Rescorla
-    organization: Mozilla
+    organization: Windy Hill Systems, LLC
     email: ekr@rtfm.com
 
  -
