@@ -43,7 +43,7 @@ informative:
   Comparse:
     author:
      - ins: T. Wallez
-       name: Théophile Wallez
+       name: Theophile Wallez
      - ins: J. Protzenko
        name: Jonathan Protzenko
      - ins: K. Bhargavan
