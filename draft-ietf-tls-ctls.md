@@ -988,4 +988,4 @@ Client Flight: 91 bytes =
 # Acknowledgments
 {:numbered="false"}
 
-We would like to thank Karthikeyan Bhargavan, Owen Friel, Sean Turner, Martin Thomson, Chris Wood, and John Preuß Mattsson.
+We would like to thank Karthikeyan Bhargavan, Owen Friel, Sean Turner, Martin Thomson, Chris Wood, Theophile Wallez, and John Preuß Mattsson.
