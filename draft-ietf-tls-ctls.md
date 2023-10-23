@@ -212,6 +212,10 @@ reserved value is used (including the default value), other keys MUST NOT appear
 in the template, and a client MUST NOT accept the template unless it recognizes
 the ID.
 
+This specification adds one profile to the IANA maintained "cTLS Profile IDs"
+registry, see {{reserved-profiles}}. The "Base cTLS 1.3-only" profile uses
+default settings for everything except the TLS version.
+
 In JSON, the profile ID is represented as a hexadecimal-encoded string.
 
 #### `version`
@@ -817,7 +821,7 @@ This document requests that IANA change the name of entry 6 in the TLS
 HandshakeType Registry from "hello_retry_request_RESERVED" to
 "hello_retry_request", and set its Reference field to this document.
 
-## cTLS Profile ID Registry
+## cTLS Profile ID Registry {#reserved-profiles}
 
 This document requests that IANA open a new registry entitled
 "cTLS Profile IDs", on the Transport Layer Security (TLS) Parameters page,
