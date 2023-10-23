@@ -255,6 +255,7 @@ Static vectors (see {{static-vectors}}):
 * `KeyShareEntry.key_exchange`, if `CTLSKeyShareGroup.key_share_length` is non-zero.
 
 In JSON, this value is represented as a dictionary with two keys:
+
 * `groupName`: a string containing the code point name from the TLS Supported Groups registry (e.g., "x25519").
 * `keyShareLength`: an integer, defaulting to zero if omitted.
 
@@ -282,6 +283,7 @@ In JSON, the
 signature algorithm is listed by the code point name in {{RFC8446,
 Section 4.2.3}}. (e.g., ecdsa_secp256r1_sha256).
 In JSON, this value is represented as a dictionary with two keys:
+
 * `signatureScheme`: a string containing the code point name in the TLS SignatureScheme registry (e.g., "ecdsa_secp256r1_sha256").
 * `signatureLength`: an integer, defaulting to zero if omitted.
 
