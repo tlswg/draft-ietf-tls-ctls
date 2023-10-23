@@ -9,7 +9,7 @@ Expires: 25 April 2024                                             Cisco
                                                            H. Tschofenig
                                                                         
                                                              B. Schwartz
-                                                                  Google
+                                                    Meta Platforms, Inc.
                                                          23 October 2023
 
 
@@ -1142,5 +1142,5 @@ Authors' Addresses
 
 
    Benjamin M. Schwartz
-   Google
+   Meta Platforms, Inc.
    Email: ietf@bemasc.net
