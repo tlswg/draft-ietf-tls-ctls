@@ -296,10 +296,12 @@ Table of Contents
    *  KeyShareEntry.key_exchange, if CTLSKeyShareGroup.key_share_length
       is non-zero.
 
-   In JSON, this value is represented as a dictionary with two keys: *
-   groupName: a string containing the code point name from the TLS
-   Supported Groups registry (e.g., "x25519"). * keyShareLength: an
-   integer, defaulting to zero if omitted.
+   In JSON, this value is represented as a dictionary with two keys:
+
+   *  groupName: a string containing the code point name from the TLS
+      Supported Groups registry (e.g., "x25519").
+
+   *  keyShareLength: an integer, defaulting to zero if omitted.
 
 2.1.1.5.  signature_algorithm
 
@@ -324,10 +326,12 @@ Table of Contents
 
    In JSON, the signature algorithm is listed by the code point name in
    [RFC8446], Section 4.2.3. (e.g., ecdsa_secp256r1_sha256).  In JSON,
-   this value is represented as a dictionary with two keys: *
-   signatureScheme: a string containing the code point name in the TLS
-   SignatureScheme registry (e.g., "ecdsa_secp256r1_sha256"). *
-   signatureLength: an integer, defaulting to zero if omitted.
+   this value is represented as a dictionary with two keys:
+
+   *  signatureScheme: a string containing the code point name in the
+      TLS SignatureScheme registry (e.g., "ecdsa_secp256r1_sha256").
+
+   *  signatureLength: an integer, defaulting to zero if omitted.
 
 2.1.1.6.  random
 

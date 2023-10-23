@@ -1457,9 +1457,15 @@ consisting solely of the group <code>CTLSKeyShareGroup.group_name</code>.<a href
                 <p id="section-2.1.1.4-5.2.1"><code>KeyShareEntry.key_exchange</code>, if <code>CTLSKeyShareGroup.key_share_length</code> is non-zero.<a href="#section-2.1.1.4-5.2.1" class="pilcrow">¶</a></p>
 </li>
             </ul>
-<p id="section-2.1.1.4-6">In JSON, this value is represented as a dictionary with two keys:
-* <code>groupName</code>: a string containing the code point name from the TLS Supported Groups registry (e.g., "x25519").
-* <code>keyShareLength</code>: an integer, defaulting to zero if omitted.<a href="#section-2.1.1.4-6" class="pilcrow">¶</a></p>
+<p id="section-2.1.1.4-6">In JSON, this value is represented as a dictionary with two keys:<a href="#section-2.1.1.4-6" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-2.1.1.4-7.1">
+                <p id="section-2.1.1.4-7.1.1"><code>groupName</code>: a string containing the code point name from the TLS Supported Groups registry (e.g., "x25519").<a href="#section-2.1.1.4-7.1.1" class="pilcrow">¶</a></p>
+</li>
+              <li class="normal" id="section-2.1.1.4-7.2">
+                <p id="section-2.1.1.4-7.2.1"><code>keyShareLength</code>: an integer, defaulting to zero if omitted.<a href="#section-2.1.1.4-7.2.1" class="pilcrow">¶</a></p>
+</li>
+            </ul>
 </section>
 </div>
 <div id="signaturealgorithm">
@@ -1488,9 +1494,15 @@ permitted to appear (i.e. ClientHello and CertificateRequest, in TLS 1.3).  When
             </ul>
 <p id="section-2.1.1.5-6">In JSON, the
 signature algorithm is listed by the code point name in <span>[<a href="#RFC8446" class="cite xref">RFC8446</a>], <a href="https://rfc-editor.org/rfc/rfc8446#section-4.2.3" class="relref">Section 4.2.3</a></span>. (e.g., ecdsa_secp256r1_sha256).
-In JSON, this value is represented as a dictionary with two keys:
-* <code>signatureScheme</code>: a string containing the code point name in the TLS SignatureScheme registry (e.g., "ecdsa_secp256r1_sha256").
-* <code>signatureLength</code>: an integer, defaulting to zero if omitted.<a href="#section-2.1.1.5-6" class="pilcrow">¶</a></p>
+In JSON, this value is represented as a dictionary with two keys:<a href="#section-2.1.1.5-6" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-2.1.1.5-7.1">
+                <p id="section-2.1.1.5-7.1.1"><code>signatureScheme</code>: a string containing the code point name in the TLS SignatureScheme registry (e.g., "ecdsa_secp256r1_sha256").<a href="#section-2.1.1.5-7.1.1" class="pilcrow">¶</a></p>
+</li>
+              <li class="normal" id="section-2.1.1.5-7.2">
+                <p id="section-2.1.1.5-7.2.1"><code>signatureLength</code>: an integer, defaulting to zero if omitted.<a href="#section-2.1.1.5-7.2.1" class="pilcrow">¶</a></p>
+</li>
+            </ul>
 </section>
 </div>
 <div id="random">
