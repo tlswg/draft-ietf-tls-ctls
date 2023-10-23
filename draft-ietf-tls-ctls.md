@@ -821,21 +821,17 @@ with the following columns:
 * Value: A sequence of 1-4 octets.
 * Name: Name of the profile.
 * Description: Short description of the profile.
-* Change Controller: For Standards Track RFCs, list the "IESG".  For others,
-give thename of the responsible party.
 * Reference: Reference to the document or documents that specify the profile.
 
-The ID values of length 1 are subject to a "Standards Action" registry
-policy. Values of length 2 are subject to an "RFC Required" policy. Values
-of length 3 and 4 are subject to a "First Come First Served" policy. Values
-longer than 4 octets are not subject to registration and MUST NOT appear
-in this registry.
+The ID values of length 1 are subject to a "RFC Required" registry
+policy. Values of length 2 are subject to an "Specification Required" policy.
+Values of length 3 and 4 are subject to a "Private Use" policy.
 
 The initial registry content is:
 
-| Value     | Name        | Description                | Change Controller | Reference |
-|:=========:|:===========:|:==========================:|:====:|:=======:|
-| `[0x00]`  | base-cTLS   | Base cTLS 1.3-only Profile | IESG | RFCXXXX |
+| Value     | Name        | Description                | Reference |
+|:=========:|:===========:|:==========================:|:=======:|
+| `[0x00]`  | base-cTLS   | Base cTLS 1.3-only Profile | RFCXXXX |
 
 > RFC EDITOR: Please replace the value XXXX to the RFC number assigned for
 this document.
