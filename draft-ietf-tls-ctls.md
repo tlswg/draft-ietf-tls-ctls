@@ -228,36 +228,54 @@ defined in {{RFC8446, Section 8.4}}.
 
 #### `dh_group`
 
-Value: a single `NamedGroup` ({{!RFC8446, Section 4.2.7}}) to use for key establishment.
+Value: a single `CTLSKeyShareGroup` to use for key establishment.
 
-This is equivalent to a literal "supported_groups" extension
-consisting solely of this group.
+~~~~
+struct {
+    NamedGroup group_name;
+    uint16 key_share_length;
+} CTLSKeyShareGroup;
+~~~~
+
+This is equivalent to adding a "supported_groups" extension to every message
+where that is allowed (i.e. ClientHello and EncryptedExtensions, in TLS 1.3)
+consisting solely of the group `CTLSKeyShareGroup.group_name`.
 
 Static vectors (see {{static-vectors}}):
 
 * `KeyShareClientHello.client_shares`
-* `KeyShareEntry.key_exchange`, if the `NamedGroup` uses fixed-size key shares.
+* `KeyShareEntry.key_exchange`, if `CTLSKeyShareGroup.key_share_length` is non-zero.
 
-In JSON, the group is listed by the code point name in {{RFC8446, Section 4.2.7}}
-(e.g., "x25519").
+In JSON, this value is represented as a dictionary with two keys:
+* `groupName`: a string containing the code point name from the TLS Supported Groups registry (e.g., "x25519").
+* `keyShareLength`: an integer, defaulting to zero if omitted.
 
 #### `signature_algorithm`
 
-Value: a single `SignatureScheme` ({{!RFC8446, Section 4.2.3}}) to use for authentication.
+Value: a single `CTLSSignatureAlgorithm` to use for authentication.
+
+~~~~
+struct {
+    SignatureScheme signature_scheme;
+    uint16 signature_length;
+} CTLSSignatureAlgorithm;
+~~~~
 
 This is equivalent to a placing a literal "signature_algorithms" extension
-consisting solely of this group in every extensions field where it is
-permitted to appear.  When this element is included,
+consisting solely of `CTLSSignatureAlgorithm.signature_scheme` in every extensions field where the "signature_algorithms" extension is
+permitted to appear (i.e. ClientHello and CertificateRequest, in TLS 1.3).  When this element is included,
 `CertificateVerify.algorithm` is omitted.
 
 Static vectors (see {{static-vectors}}):
 
-* `CertificateVerify.signature`, if the `SignatureScheme` output is
-  self-delimiting.
+* `CertificateVerify.signature`, if `CTLSSignatureAlgorithm.signature_length` is non-zero.
 
 In JSON, the
 signature algorithm is listed by the code point name in {{RFC8446,
 Section 4.2.3}}. (e.g., ecdsa_secp256r1_sha256).
+In JSON, this value is represented as a dictionary with two keys:
+* `signatureScheme`: a string containing the code point name in the TLS SignatureScheme registry (e.g., "ecdsa_secp256r1_sha256").
+* `signatureLength`: an integer, defaulting to zero if omitted.
 
 #### `random`
 
@@ -452,7 +470,10 @@ For example, suppose that the cTLS template is:
 {
   "ctlsVersion": 0,
   "version": 772,
-  "dhGroup": "x25519",
+  "dhGroup": {
+    "groupName": "x25519",
+    "keyShareLength": 32
+  },
   "clientHelloExtensions": {
     "expectedExtensions": ["key_share"],
     "allowAdditional": false
@@ -721,7 +742,10 @@ else is ordinary TLS 1.3.
    "version" : 772,
    "random": 16,
    "cipherSuite" : "TLS_AES_128_GCM_SHA256",
-   "dhGroup": "x25519",
+   "dhGroup": {
+     "groupName": "x25519",
+     "keyShareLength": 32
+   },
    "clientHelloExtensions": {
       "predefinedExtensions": {
           "application_layer_protocol_negotiation" : "030016832",
@@ -864,8 +888,14 @@ The following compression profile was used in this example:
   "profile": "abcdef1234",
   "version": 772,
   "cipherSuite": "TLS_AES_128_CCM_8_SHA256",
-  "dhGroup": "x25519",
-  "signatureAlgorithm": "ed25519",
+  "dhGroup": {
+    "groupName": "x25519",
+    "keyShareLength": 32
+  },
+  "signatureAlgorithm": {
+    "signatureScheme": "ed25519",
+    "signatureLength": 64
+  },
   "finishedSize": 8,
   "clientHelloExtensions": {
     "predefinedExtensions": {
