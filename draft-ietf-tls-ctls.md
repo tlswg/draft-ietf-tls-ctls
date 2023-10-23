@@ -811,7 +811,7 @@ IANA is requested to add the following entry to the TLS HandshakeType registry.
 
 * Value: TBD
 * Description: ctls_template
-* DTLS-OK: ??? Not clear what to put here.
+* DTLS-OK: N/A
 * Reference: (This document)
 * Comment: Virtual message used in cTLS.
 
@@ -833,7 +833,7 @@ with the following columns:
 * Change Controller: For Standards Track RFCs, list the "IESG".  For others,
 give thename of the responsible party.
 * Reference: Reference to the document or documents that specify the profile.
- 
+
 The ID values of length 1 are subject to a "Standards Action" registry
 policy. Values of length 2 are subject to an "RFC Required" policy. Values
 of length 3 and 4 are subject to a "First Come First Served" policy. Values
