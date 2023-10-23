@@ -213,6 +213,10 @@ reserved value is used (including the default value), other keys MUST NOT appear
 in the template, and a client MUST NOT accept the template unless it recognizes
 the ID.
 
+This specification adds one profile to the IANA maintained "cTLS Profile IDs"
+registry, see {{reserved-profiles}}. The "Base cTLS 1.3-only" profile uses
+default settings for everything except the TLS version.
+
 In JSON, the profile ID is represented as a hexadecimal-encoded string.
 
 #### `version`
@@ -784,7 +788,7 @@ attacker could be using a forged template to impersonate the other party.
 This should not impact any ordinary use of TLS, including Early Data (which
 is secured by the previously completed handshake).
 
-# IANA Considerations
+# IANA Considerations {#iana}
 
 ## Adding a ContentType
 
@@ -838,27 +842,29 @@ This document requests that IANA change the name of entry 6 in the TLS
 HandshakeType Registry from "hello_retry_request_RESERVED" to
 "hello_retry_request", and set its Reference field to this document.
 
-## Reserved profiles
+## cTLS Profile ID Registry {#reserved-profiles}
 
-This document requests that IANA open a new registry entitled "Well-known
-cTLS Profile IDs", on the Transport Layer Security (TLS) Parameters page,
+This document requests that IANA open a new registry entitled
+"cTLS Profile IDs", on the Transport Layer Security (TLS) Parameters page,
 with the following columns:
 
-* ID value: A sequence of 1-4 octets.
-* Template: A JSON object.
-* Note: An explanation or reference.
+* Value: A sequence of 1-4 octets.
+* Name: Name of the profile.
+* Description: Short description of the profile.
+* Reference: Reference to the document or documents that specify the profile.
 
-The ID values of length 1 are subject to a "Standards Action" registry
-policy. Values of length 2 are subject to an "RFC Required" policy. Values
-of length 3 and 4 are subject to a "First Come First Served" policy. Values
-longer than 4 octets are not subject to registration and MUST NOT appear
-in this registry.
+The ID values of length 1 are subject to a "RFC Required" registry
+policy. Values of length 2 are subject to an "Specification Required" policy.
+Values of length 3 and 4 are subject to a "Private Use" policy.
 
-The initial registry contents are:
+The initial registry content is:
 
-| ID value  | Template           | Note          |
-|:=========:|:==================:|:=============:|
-| `[0x00]`  | `{"version": 772}` | cTLS 1.3-only |
+| Value     | Name        | Description                | Reference |
+|:=========:|:===========:|:==========================:|:=======:|
+| `[0x00]`  | base-cTLS   | Base cTLS 1.3-only Profile | RFCXXXX |
+
+> RFC EDITOR: Please replace the value XXXX to the RFC number assigned for
+this document.
 
 --- back
 
