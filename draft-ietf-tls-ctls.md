@@ -34,7 +34,7 @@ author:
     ins: B. Schwartz
     name: Benjamin M. Schwartz
     organization: Google
-    email: bemasc@google.com
+    email: ietf@bemasc.net
 
 normative:
   RFC2119:
@@ -45,10 +45,9 @@ informative:
 
 --- abstract
 
-This document specifies a "compact" version of TLS 1.3 and DTLS 1.3. It is logically
-isomorphic to ordinary TLS, but saves space by trimming obsolete material,
-tighter encoding, a template-based specialization technique, and
-alternative cryptographic techniques. cTLS is not directly interoperable with
+This document specifies a "compact" version of TLS 1.3 and DTLS 1.3. It saves bandwidth
+by trimming obsolete material, tighter encoding, a template-based specialization technique,
+and alternative cryptographic techniques. cTLS is not directly interoperable with
 TLS 1.3 or DTLS 1.3 since the over-the-wire framing is different. A single server
 can, however, offer cTLS alongside TLS or DTLS.
 
@@ -163,8 +162,6 @@ struct {
 } CTLSTemplate;
 ~~~~
 
-> TODO: Reorder enum.
-
 Elements in a `CTLSTemplate` MUST appear sorted by the type field in strictly
 ascending order.  The initial elements are defined in the subsections below.
 Future elements can be added via an IANA registry ({{template-keys}}).  When
@@ -177,8 +174,6 @@ It consists of a dictionary whose keys are the name of each element type (conver
 from snake_case to camelCase), and whose values are a type-specific representation
 of the element intended to maximize legibility.  The cTLS version is represented
 by the key "ctlsVersion", whose value is an integer, defaulting to 0 if omitted.
-
-> OPEN ISSUE: Is it really worth converting snake_case to camelCase?  camelCase is slightly more traditional in JSON, and saves one byte, but it seems annoying to implement.
 
 For example, the following specialization describes a protocol with a single fixed
 version (TLS 1.3) and a single fixed cipher suite (TLS_AES_128_GCM_SHA256). On the
@@ -195,8 +190,6 @@ supported_versions extensions in the ClientHello and ServerHello would be omitte
 ~~~~
 
 ### Initial template elements
-
-> TODO: Reorder section.
 
 #### `profile`
 
@@ -303,6 +296,19 @@ In JSON, this value is represented as `true` or `false`.
 > `Certificate.certificate_request_context` field, but this is not stated
 > explicitly anywhere.
 
+#### `handshake_framing`
+
+Value: `uint8`, with 0 indicating "false" and 1 indicating "true".
+If true, handshake messages MUST be conveyed inside a `Handshake`
+({{!RFC8446, Section 4}}) struct on reliable, ordered transports, or a
+`DTLSHandshake` ({{!RFC9147, Section 5.2}}) struct otherwise,
+and MAY be broken into multiple records as in TLS and DTLS.  If false,
+each handshake message is conveyed in a `CTLSHandshake` or
+`CTLSDatagramHandshake` struct ({{ctlshandshake}}), which MUST be the payload
+of a single record.
+
+In JSON, this value is represented as `true` or `false`.
+
 #### `client_hello_extensions`, `server_hello_extensions`, `encrypted_extensions`, and `certificate_request_extensions`
 
 Value: a single `CTLSExtensionTemplate` struct:
@@ -373,19 +379,6 @@ length.
 > learned via a trusted channel.
 
 In JSON, this length is represented as an integer.
-
-#### `handshake_framing`
-
-Value: `uint8`, with 0 indicating "false" and 1 indicating "true".
-If true, handshake messages MUST be conveyed inside a `Handshake`
-({{!RFC8446, Section 4}}) struct on reliable, ordered transports, or a
-`DTLSHandshake` ({{!RFC9147, Section 5.2}}) struct otherwise,
-and MAY be broken into multiple records as in TLS and DTLS.  If false,
-each handshake message is conveyed in a `CTLSHandshake` or
-`CTLSDatagramHandshake` struct ({{ctlshandshake}}), which MUST be the payload
-of a single record.
-
-In JSON, this value is represented as `true` or `false`.
 
 #### `optional`
 
@@ -781,8 +774,6 @@ added in the registry has the following form:
 > RFC EDITOR: Please replace the value TBD with the value assigned by IANA, and
 the value XXXX to the RFC number assigned for this document.
 
-> OPEN ISSUE: Should we require standards action for all profile IDs that would fit in 2 octets.
-
 ## Template Keys
 
 This document requests that IANA open a new registry entitled "cTLS Template Keys", on the Transport Layer Security (TLS) Parameters page, with a "Specification Required" registration policy and the following initial contents:
@@ -811,7 +802,7 @@ IANA is requested to add the following entry to the TLS HandshakeType registry.
 
 * Value: TBD
 * Description: ctls_template
-* DTLS-OK: N/A
+* DTLS-OK: Y
 * Reference: (This document)
 * Comment: Virtual message used in cTLS.
 
