@@ -1429,20 +1429,30 @@ defined in <span>[<a href="#RFC8446" class="cite xref">RFC8446</a>], <a href="ht
             <h5 id="name-dh_group">
 <a href="#section-2.1.1.4" class="section-number selfRef">2.1.1.4. </a><a href="#name-dh_group" class="section-name selfRef"><code>dh_group</code></a>
             </h5>
-<p id="section-2.1.1.4-1">Value: a single <code>NamedGroup</code> (<span>[<a href="#RFC8446" class="cite xref">RFC8446</a>], <a href="https://rfc-editor.org/rfc/rfc8446#section-4.2.7" class="relref">Section 4.2.7</a></span>) to use for key establishment.<a href="#section-2.1.1.4-1" class="pilcrow">¶</a></p>
-<p id="section-2.1.1.4-2">This is equivalent to a literal "supported_groups" extension
-consisting solely of this group.<a href="#section-2.1.1.4-2" class="pilcrow">¶</a></p>
-<p id="section-2.1.1.4-3">Static vectors (see <a href="#static-vectors" class="auto internal xref">Section 2.1.2</a>):<a href="#section-2.1.1.4-3" class="pilcrow">¶</a></p>
+<p id="section-2.1.1.4-1">Value: a single <code>CTLSKeyShareGroup</code> to use for key establishment.<a href="#section-2.1.1.4-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-2.1.1.4-2">
+<pre>
+struct {
+    NamedGroup group_name;
+    uint16 key_share_length;
+} CTLSKeyShareGroup;
+</pre><a href="#section-2.1.1.4-2" class="pilcrow">¶</a>
+</div>
+<p id="section-2.1.1.4-3">This is equivalent to adding a "supported_groups" extension to every message
+where that is allowed (i.e. ClientHello and EncryptedExtensions, in TLS 1.3)
+consisting solely of the group <code>CTLSKeyShareGroup.group_name</code>.<a href="#section-2.1.1.4-3" class="pilcrow">¶</a></p>
+<p id="section-2.1.1.4-4">Static vectors (see <a href="#static-vectors" class="auto internal xref">Section 2.1.2</a>):<a href="#section-2.1.1.4-4" class="pilcrow">¶</a></p>
 <ul class="normal">
-<li class="normal" id="section-2.1.1.4-4.1">
-                <p id="section-2.1.1.4-4.1.1"><code>KeyShareClientHello.client_shares</code><a href="#section-2.1.1.4-4.1.1" class="pilcrow">¶</a></p>
+<li class="normal" id="section-2.1.1.4-5.1">
+                <p id="section-2.1.1.4-5.1.1"><code>KeyShareClientHello.client_shares</code><a href="#section-2.1.1.4-5.1.1" class="pilcrow">¶</a></p>
 </li>
-              <li class="normal" id="section-2.1.1.4-4.2">
-                <p id="section-2.1.1.4-4.2.1"><code>KeyShareEntry.key_exchange</code>, if the <code>NamedGroup</code> uses fixed-size key shares.<a href="#section-2.1.1.4-4.2.1" class="pilcrow">¶</a></p>
+              <li class="normal" id="section-2.1.1.4-5.2">
+                <p id="section-2.1.1.4-5.2.1"><code>KeyShareEntry.key_exchange</code>, if <code>CTLSKeyShareGroup.key_share_length</code> is non-zero.<a href="#section-2.1.1.4-5.2.1" class="pilcrow">¶</a></p>
 </li>
             </ul>
-<p id="section-2.1.1.4-5">In JSON, the group is listed by the code point name in <span>[<a href="#RFC8446" class="cite xref">RFC8446</a>], <a href="https://rfc-editor.org/rfc/rfc8446#section-4.2.7" class="relref">Section 4.2.7</a></span>
-(e.g., "x25519").<a href="#section-2.1.1.4-5" class="pilcrow">¶</a></p>
+<p id="section-2.1.1.4-6">In JSON, this value is represented as a dictionary with two keys:
+* <code>groupName</code>: a string containing the code point name from the TLS Supported Groups registry (e.g., "x25519").
+* <code>keyShareLength</code>: an integer, defaulting to zero if omitted.<a href="#section-2.1.1.4-6" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="signaturealgorithm">
@@ -1450,20 +1460,30 @@ consisting solely of this group.<a href="#section-2.1.1.4-2" class="pilcrow">¶<
             <h5 id="name-signature_algorithm">
 <a href="#section-2.1.1.5" class="section-number selfRef">2.1.1.5. </a><a href="#name-signature_algorithm" class="section-name selfRef"><code>signature_algorithm</code></a>
             </h5>
-<p id="section-2.1.1.5-1">Value: a single <code>SignatureScheme</code> (<span>[<a href="#RFC8446" class="cite xref">RFC8446</a>], <a href="https://rfc-editor.org/rfc/rfc8446#section-4.2.3" class="relref">Section 4.2.3</a></span>) to use for authentication.<a href="#section-2.1.1.5-1" class="pilcrow">¶</a></p>
-<p id="section-2.1.1.5-2">This is equivalent to a placing a literal "signature_algorithms" extension
-consisting solely of this group in every extensions field where it is
-permitted to appear.  When this element is included,
-<code>CertificateVerify.algorithm</code> is omitted.<a href="#section-2.1.1.5-2" class="pilcrow">¶</a></p>
-<p id="section-2.1.1.5-3">Static vectors (see <a href="#static-vectors" class="auto internal xref">Section 2.1.2</a>):<a href="#section-2.1.1.5-3" class="pilcrow">¶</a></p>
+<p id="section-2.1.1.5-1">Value: a single <code>CTLSSignatureAlgorithm</code> to use for authentication.<a href="#section-2.1.1.5-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-2.1.1.5-2">
+<pre>
+struct {
+    SignatureScheme signature_scheme;
+    uint16 signature_length;
+} CTLSSignatureAlgorithm;
+</pre><a href="#section-2.1.1.5-2" class="pilcrow">¶</a>
+</div>
+<p id="section-2.1.1.5-3">This is equivalent to a placing a literal "signature_algorithms" extension
+consisting solely of <code>CTLSSignatureAlgorithm.signature_scheme</code> in every extensions field where the "signature_algorithms" extension is
+permitted to appear (i.e. ClientHello and CertificateRequest, in TLS 1.3).  When this element is included,
+<code>CertificateVerify.algorithm</code> is omitted.<a href="#section-2.1.1.5-3" class="pilcrow">¶</a></p>
+<p id="section-2.1.1.5-4">Static vectors (see <a href="#static-vectors" class="auto internal xref">Section 2.1.2</a>):<a href="#section-2.1.1.5-4" class="pilcrow">¶</a></p>
 <ul class="normal">
-<li class="normal" id="section-2.1.1.5-4.1">
-                <p id="section-2.1.1.5-4.1.1"><code>CertificateVerify.signature</code>, if the <code>SignatureScheme</code> output is
-self-delimiting.<a href="#section-2.1.1.5-4.1.1" class="pilcrow">¶</a></p>
+<li class="normal" id="section-2.1.1.5-5.1">
+                <p id="section-2.1.1.5-5.1.1"><code>CertificateVerify.signature</code>, if <code>CTLSSignatureAlgorithm.signature_length</code> is non-zero.<a href="#section-2.1.1.5-5.1.1" class="pilcrow">¶</a></p>
 </li>
             </ul>
-<p id="section-2.1.1.5-5">In JSON, the
-signature algorithm is listed by the code point name in <span>[<a href="#RFC8446" class="cite xref">RFC8446</a>], <a href="https://rfc-editor.org/rfc/rfc8446#section-4.2.3" class="relref">Section 4.2.3</a></span>. (e.g., ecdsa_secp256r1_sha256).<a href="#section-2.1.1.5-5" class="pilcrow">¶</a></p>
+<p id="section-2.1.1.5-6">In JSON, the
+signature algorithm is listed by the code point name in <span>[<a href="#RFC8446" class="cite xref">RFC8446</a>], <a href="https://rfc-editor.org/rfc/rfc8446#section-4.2.3" class="relref">Section 4.2.3</a></span>. (e.g., ecdsa_secp256r1_sha256).
+In JSON, this value is represented as a dictionary with two keys:
+* <code>signatureScheme</code>: a string containing the code point name in the TLS SignatureScheme registry (e.g., "ecdsa_secp256r1_sha256").
+* <code>signatureLength</code>: an integer, defaulting to zero if omitted.<a href="#section-2.1.1.5-6" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="random">
@@ -1701,7 +1721,10 @@ a "static vector", its length prefix is omitted.<a href="#section-2.1.2-1" class
 {
   "ctlsVersion": 0,
   "version": 772,
-  "dhGroup": "x25519",
+  "dhGroup": {
+    "groupName": "x25519",
+    "keyShareLength": 32
+  },
   "clientHelloExtensions": {
     "expectedExtensions": ["key_share"],
     "allowAdditional": false
@@ -2029,7 +2052,10 @@ else is ordinary TLS 1.3.<a href="#section-4-2" class="pilcrow">¶</a></p>
    "version" : 772,
    "random": 16,
    "cipherSuite" : "TLS_AES_128_GCM_SHA256",
-   "dhGroup": "x25519",
+   "dhGroup": {
+     "groupName": "x25519",
+     "keyShareLength": 32
+   },
    "clientHelloExtensions": {
       "predefinedExtensions": {
           "application_layer_protocol_negotiation" : "030016832",
@@ -2349,8 +2375,14 @@ Total        1158  325      272
   "profile": "abcdef1234",
   "version": 772,
   "cipherSuite": "TLS_AES_128_CCM_8_SHA256",
-  "dhGroup": "x25519",
-  "signatureAlgorithm": "ed25519",
+  "dhGroup": {
+    "groupName": "x25519",
+    "keyShareLength": 32
+  },
+  "signatureAlgorithm": {
+    "signatureScheme": "ed25519",
+    "signatureLength": 64
+  },
   "finishedSize": 8,
   "clientHelloExtensions": {
     "predefinedExtensions": {
