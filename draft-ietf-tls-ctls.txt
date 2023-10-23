@@ -3,14 +3,14 @@
 
 
 TLS Working Group                                            E. Rescorla
-Internet-Draft                                                   Mozilla
+Internet-Draft                                   Windy Hill Systems, LLC
 Intended status: Standards Track                               R. Barnes
-Expires: 14 September 2023                                         Cisco
+Expires: 25 April 2024                                             Cisco
                                                            H. Tschofenig
                                                                         
                                                              B. Schwartz
                                                                   Google
-                                                           13 March 2023
+                                                         23 October 2023
 
 
                             Compact TLS 1.3
@@ -40,7 +40,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 14 September 2023.
+   This Internet-Draft will expire on 25 April 2024.
 
 Copyright Notice
 
@@ -1092,7 +1092,7 @@ Acknowledgments
 Authors' Addresses
 
    Eric Rescorla
-   Mozilla
+   Windy Hill Systems, LLC
    Email: ekr@rtfm.com
 
 
