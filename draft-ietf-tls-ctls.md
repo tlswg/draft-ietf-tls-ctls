@@ -48,7 +48,7 @@ informative:
        name: Jonathan Protzenko
      - ins: K. Bhargavan
        name: Karthikeyan Bhargavan
-    title: Comparse: Provably Secure Formats for Cryptographic Protocols
+    title: "Comparse: Provably Secure Formats for Cryptographic Protocols"
     target: https://eprint.iacr.org/2023/1390
     date: 2023
 
