@@ -40,8 +40,17 @@ normative:
   RFC2119:
 
 informative:
-
-
+  Comparse:
+    author:
+     - ins: T. Wallez
+       name: Théophile Wallez
+     - ins: J. Protzenko
+       name: Jonathan Protzenko
+     - ins: K. Bhargavan
+       name: Karthikeyan Bhargavan
+    title: Comparse: Provably Secure Formats for Cryptographic Protocols
+    target: https://eprint.iacr.org/2023/1390
+    date: 2023
 
 --- abstract
 
@@ -54,10 +63,6 @@ can, however, offer cTLS alongside TLS or DTLS.
 --- middle
 
 # Introduction
-
-DISCLAIMER: This is a work-in-progress draft of cTLS and has not yet
-seen significant security analysis, so could contain major errors. It
-should not be used as a basis for building production systems.
 
 This document specifies "compact" versions of TLS {{!RFC8446}} and DTLS
 {{!RFC9147}}, respectively known as "Stream cTLS" and "Datagram cTLS".  cTLS
@@ -84,6 +89,9 @@ handshake transcript can be found in {{transcripts}}.
 cTLS supports the functionality of TLS and DTLS 1.3, and is forward-compatible
 to future versions of TLS and DTLS.  cTLS itself is versioned by
 `CTLSTemplate.version` (currently zero).
+
+The compression of the handshake while preserving the security guarantees
+of TLS has been formally verified in {{Comparse}}.
 
 # Conventions and Definitions
 
@@ -734,10 +742,6 @@ else is ordinary TLS 1.3.
 Version 772 corresponds to the hex representation 0x0304 (i.e. 1.3).
 
 # Security Considerations
-
-WARNING: This document is effectively brand new and has seen no
-analysis. The idea here is that cTLS is isomorphic to TLS 1.3, and
-therefore should provide equivalent security guarantees.
 
 The use of key ids is a new feature introduced in this document, which
 requires some analysis, especially as it looks like a potential source
